@@ -109,6 +109,8 @@ public:
             GroupQueueInfo const* my_gqi = qpm_citr != queue.m_QueuedPlayers.cend() ? qpm_citr->second.GroupInfo : nullptr;
             Battleground* bg = my_gqi ? sBattlegroundMgr->GetBattleground(my_gqi->IsInvitedToBGInstanceGUID, _bgTypeId) : nullptr;
 
+            // Ornfelt: Fix arena
+			//if (!bg->HasFreeSlots() && !bg->isArena()) // Not needed anymore
             if (!bg || bg->GetPlayersCountByTeam(ALLIANCE) + bg->GetPlayersCountByTeam(HORDE) >= bg->GetMaxPlayersPerTeam() * 2)
             {
                 AbortAll();
@@ -160,9 +162,23 @@ void SpawnWandererBot(uint32 bot_id, WanderNode const* spawnLoc, NpcBotRegistry*
     Map* map = sMapMgr->CreateBaseMap(spawnLoc->GetMapId());
     map->LoadGrid(spawnLoc->m_positionX, spawnLoc->m_positionY);
 
-    TC_LOG_DEBUG("npcbots", "Spawning wandering bot: {} ({}) class {} race {} fac {}, location: mapId {} {} ({})",
-        bot_template.Name, bot_id, uint32(bot_extras->bclass), uint32(bot_extras->race), bot_data->faction,
-        spawnLoc->GetMapId(), spawnLoc->ToString(), spawnLoc->GetName());
+    if (map->GetEntry()->IsContinent())
+        //TC_LOG_DEBUG("npcbots", "Spawning wandering bot: {} ({}) class {} race {} fac {}, location: mapId {} {} ({})",
+        TC_LOG_INFO("npcbots", "Spawning wandering bot: {} ({}) class {} race {} fac {}, location: mapId {} {} ({})",
+            bot_template.Name, bot_id, uint32(bot_extras->bclass), uint32(bot_extras->race), bot_data->faction,
+            spawnLoc->GetMapId(), spawnLoc->ToString(), spawnLoc->GetName());
+
+    // Ornfelt: Write position to file. Requires:
+    //#include <fstream>
+    //std::ofstream outfile;
+    //outfile.open("./wander_nodes_data/wander_nodes_all.txt", std::ios_base::app); // Append instead of overwrite
+    //outfile << "Spawning wandering bot! Bot: " + std::to_string(bot_id) + ", WP: " + spawnLoc->ToString() + ", name: " + spawnLoc->GetName() + "\n";
+    //outfile.close();
+    // Write to DB
+    if (map->GetEntry()->IsContinent())
+        //CharacterDatabase.DirectPExecute("INSERT INTO characters_playermap (guid,account,name,class,race,level,gender,position_x,position_y,map,zone,extra_flags,online,taximask,innTriggerId) VALUES (%u,1,\"%s\",%u,%u,%u,%u,%f,%f,%u,%u,64,1,'',1)",
+        CharacterDatabase.DirectPExecute("INSERT INTO characters_playermap(guid,account,name,class,race,level,gender,position_x,position_y,map,zone,extra_flags,online,taximask,innTriggerId) VALUES ({},1,\"{}\",{},{},{},{},{},{},{},{},64,1,'',1)",
+                bot_id,bot_template.Name.c_str(),bot_extras->bclass,bot_extras->race,0,1,spawnLoc->m_positionX,spawnLoc->m_positionY,spawnLoc->GetMapId(),spawnLoc->GetZoneId());
 
     Creature* bot = new Creature();
     if (!bot->LoadBotCreatureFromDB(0, map, true, true, bot_id, &spawnPos))
@@ -648,7 +664,7 @@ void BotDataMgr::Update(uint32 diff)
             _botsWanderCreatureEquipmentTemplates.erase(bwcetitr);
             _botsWanderCreatureTemplates.erase(bwctitr);
 
-            TC_LOG_DEBUG("npcbots", "Despawned wanderer bot {} '{}' (orig {})", bot_despawn_id, botName, origEntry);
+            //TC_LOG_DEBUG("npcbots", "Despawned wanderer bot {} '{}' (orig {})", bot_despawn_id, botName, origEntry);
         }
     }
 
@@ -1372,7 +1388,9 @@ bool BotDataMgr::GenerateBattlegroundBots(Player const* groupLeader, [[maybe_unu
 
     uint32 tarteamplayers = BotMgr::GetBGTargetTeamPlayersCount(bgTypeId);
 
-    if (tarteamplayers == 0)
+    // Ornfelt: Allow Nagrand arena skirmish
+    //if (tarteamplayers == 0)
+    if (tarteamplayers == 0 && bgTypeId != 6)
     {
         TC_LOG_INFO("npcbots", "[Disabled] BG {} wandering bots generation is disabled (not implemented?)", uint32(bgTypeId));
         return true;
@@ -1424,8 +1442,16 @@ bool BotDataMgr::GenerateBattlegroundBots(Player const* groupLeader, [[maybe_unu
     uint32 needed_bots_count_a = (queued_players_a < tarteamplayers) ? (tarteamplayers - queued_players_a) : 0;
     uint32 needed_bots_count_h = (queued_players_h < tarteamplayers) ? (tarteamplayers - queued_players_h) : 0;
 
-    ASSERT(needed_bots_count_a <= maxteamplayers);
-    ASSERT(needed_bots_count_h <= maxteamplayers);
+    // Ornfelt: Fix amount of bots in arena skirmish
+    if (bgTypeId == 6)
+    {
+        needed_bots_count_a = atype - queued_players_a;
+        needed_bots_count_h = atype - queued_players_h;
+    }
+
+    // Ornfelt: Remove assert
+    //ASSERT(needed_bots_count_a <= maxteamplayers);
+    //ASSERT(needed_bots_count_h <= maxteamplayers);
 
     if (needed_bots_count_a + needed_bots_count_h == 0)
     {
@@ -1485,8 +1511,9 @@ bool BotDataMgr::GenerateBattlegroundBots(Player const* groupLeader, [[maybe_unu
         }
     }
 
-    ASSERT(uint32(spawned_bots_a.size()) == needed_bots_count_a);
-    ASSERT(uint32(spawned_bots_h.size()) == needed_bots_count_h);
+    // Ornfelt: Remove assert
+    //ASSERT(uint32(spawned_bots_a.size()) == needed_bots_count_a);
+    //ASSERT(uint32(spawned_bots_h.size()) == needed_bots_count_h);
 
     botBGJoinEvents[groupLeader->GetGUID()].AddEventAtOffset([ammr = ammr, atype = atype, bgqTypeId = bgqTypeId, bgTypeId = bgTypeId, bracketId = bracketId]() {
         sBattlegroundMgr->ScheduleQueueUpdate(ammr, atype, bgqTypeId, bgTypeId, bracketId);
@@ -1507,7 +1534,11 @@ bool BotDataMgr::GenerateBattlegroundBots(Player const* groupLeader, [[maybe_unu
             queue->AddBotAsGroup(bot->GetGUID(), GetTeamIdForFaction(bot->GetFaction()) == TEAM_HORDE ? HORDE : ALLIANCE,
                 bgTypeId, bracketEntry, atype, false, gqinfo->ArenaTeamRating, ammr);
 
-            seconds_delay = std::min<uint32>(uint32(MINUTE * 2), seconds_delay + std::max<uint32>(1u, uint32((MINUTE / 2) / std::max<uint32>(needed_bots_count_a, needed_bots_count_h))));
+            // Ornfelt: Fix bots in arena queueing slowly...
+            if (bgTypeId == 6)
+                seconds_delay += std::max<uint32>(1u, uint32((MINUTE / 4) / std::min<uint32>(needed_bots_count_a, needed_bots_count_h)));
+            else
+                seconds_delay = std::min<uint32>(uint32(MINUTE * 2), seconds_delay + std::max<uint32>(1u, uint32((MINUTE / 2) / std::max<uint32>(needed_bots_count_a, needed_bots_count_h))));
 
             BotBattlegroundEnterEvent* bbe = new BotBattlegroundEnterEvent(groupLeader->GetGUID(), bot->GetGUID(), bgqTypeId, bgTypeId,
                 botBGJoinEvents[groupLeader->GetGUID()].CalculateTime(Milliseconds(uint32(INVITE_ACCEPT_WAIT_TIME) + uint32(BG_START_DELAY_2M))).count());

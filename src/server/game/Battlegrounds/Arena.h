@@ -57,6 +57,13 @@ class TC_GAME_API Arena : public Battleground
 
         void HandleKillPlayer(Player* player, Player* killer) override;
 
+        // Ornfelt: npcbot
+        void AddBot(Creature* bot) override;
+        void HandleBotKillPlayer(Creature* killer, Player* victim) override;
+        void HandleBotKillBot(Creature* killer, Creature* victim) override;
+        void HandlePlayerKillBot(Creature* victim, Player* killer) override;
+        //end npcbot
+
     private:
         void RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sendPacket) override;
         void CheckWinConditions() override;
