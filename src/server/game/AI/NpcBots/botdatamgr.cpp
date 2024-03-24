@@ -109,6 +109,16 @@ public:
             GroupQueueInfo const* my_gqi = qpm_citr != queue.m_QueuedPlayers.cend() ? qpm_citr->second.GroupInfo : nullptr;
             Battleground* bg = my_gqi ? sBattlegroundMgr->GetBattleground(my_gqi->IsInvitedToBGInstanceGUID, _bgTypeId) : nullptr;
 
+			// Ornfelt: Fix arena
+            if (!bg)
+            {
+                Player const* bgPlayer = ObjectAccessor::FindConnectedPlayer(_playerGUID);
+                if (bgPlayer && bgPlayer->IsInWorld() && bgPlayer->InBattleground() && bgPlayer->GetMap()->IsBattlegroundOrArena())
+                {
+                    bg = bgPlayer->GetBattleground();
+                }
+            }
+
             // Ornfelt: Fix arena
 			//if (!bg->HasFreeSlots() && !bg->isArena()) // Not needed anymore
             if (!bg || bg->GetPlayersCountByTeam(ALLIANCE) + bg->GetPlayersCountByTeam(HORDE) >= bg->GetMaxPlayersPerTeam() * 2)
