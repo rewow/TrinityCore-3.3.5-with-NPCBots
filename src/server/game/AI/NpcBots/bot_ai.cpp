@@ -5017,14 +5017,14 @@ void bot_ai::CalculateAoeSpots(Unit const* unit, AoeSpotsVec& spots)
     //Additional: aoe coming from spawned npcs
 
     //Molten Core
-    if (unit->GetMapId() == 409)  
+    if (unit->GetMapId() == 409)
     {
         std::list<GameObject*> gListMC;
-        Trinity::AllGameObjectsWithEntryInRange checkMC(unit, GAMEOBJECT_HOT_COAL, 60.f);  
+        Trinity::AllGameObjectsWithEntryInRange checkMC(unit, GAMEOBJECT_HOT_COAL, 60.f);
         Trinity::GameObjectListSearcher<Trinity::AllGameObjectsWithEntryInRange> searcherMC(unit, gListMC, checkMC);
         Cell::VisitAllObjects(unit, searcherMC, 60.f);
 
-        float radius = 15.0f + DEFAULT_PLAYER_COMBAT_REACH;  
+        float radius = 15.0f + DEFAULT_PLAYER_COMBAT_REACH;
         for (std::list<GameObject*>::const_iterator ci = gListMC.cbegin(); ci != gListMC.cend(); ++ci)
             spots.push_back(AoeSpotsVec::value_type(*(*ci), radius));
     }
@@ -18690,7 +18690,7 @@ WanderNode const* bot_ai::GetNextBGTravelNode() const
                     Creature const* mboss = ASSERT_NOTNULL(av->GetBGCreature(uint32(sptype)));
                     if (mboss->IsAlive() && !mboss->IsInCombat() && me->IsWithinDist2d(mboss, SIZE_OF_GRIDS * 0.75f))
                     {
-                        WanderNode const* mineWP = ASSERT_NOTNULL(WanderNode::FindInMapWPs(mboss->GetMapId(), mine_pred));
+                        WanderNode const* mineWP = ASSERT_NOTNULL(WanderNode::FindInZoneWPs(mboss->GetMapId(), mine_pred));
                         WanderNode const* mineLink = mineWP->GetLinks().front();
                         NodeList mlinks = curNode->GetShortestPathLinks(mineWP, links);
                         if (!mlinks.empty())
