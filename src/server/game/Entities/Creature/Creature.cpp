@@ -59,6 +59,7 @@ Random(CreatureRandomMovementType::Walk), InteractionPauseTimer(sWorld->getIntCo
 
 //npcbot
 #include "bot_ai.h"
+#include "botdatamgr.h"
 #include "botmgr.h"
 #include "bpet_ai.h"
 //end npcbot
@@ -1710,6 +1711,11 @@ bool Creature::LoadFromDB(ObjectGuid::LowType spawnId, Map* map, bool addToMap, 
         TC_LOG_ERROR("sql.sql", "Creature (SpawnID {}) not found in table `creature`, can't load. ", spawnId);
         return false;
     }
+
+    //npcbot
+    if (BotDataMgr::SelectNpcBotData(data->id))
+        return false;
+    //end npcbot
 
     m_spawnId = spawnId;
 
@@ -3439,21 +3445,10 @@ void Creature::DoNotReacquireSpellFocusTarget()
 
 bool Creature::IsMovementPreventedByCasting() const
 {
-    // first check if currently a movement allowed channel is active and we're not casting
-    if (Spell* spell = m_currentSpells[CURRENT_CHANNELED_SPELL])
-    {
-        if (spell->getState() != SPELL_STATE_FINISHED && spell->IsChannelActive())
-            if (spell->GetSpellInfo()->IsMoveAllowedChannel())
-                return false;
-    }
+    if (!Unit::IsMovementPreventedByCasting() && !HasSpellFocus())
+        return false;
 
-    if (HasSpellFocus())
-        return true;
-
-    if (HasUnitState(UNIT_STATE_CASTING))
-        return true;
-
-    return false;
+    return true;
 }
 
 void Creature::StartPickPocketRefillTimer()

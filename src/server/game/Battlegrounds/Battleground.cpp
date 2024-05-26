@@ -973,7 +973,7 @@ void Battleground::RemovePlayerAtLeave(ObjectGuid guid, bool Transport, bool Sen
         {
             BotMap const* map = player->GetBotMgr()->GetBotMap();
             for (BotMap::const_iterator itr = map->begin(); itr != map->end(); ++itr)
-                RemovePlayerAtLeave(itr->first, Transport, SendPacket);
+                RemoveBotAtLeave(itr->first);
         }
         //end npcbot
     }
@@ -1461,7 +1461,14 @@ uint32 Battleground::GetFreeSlotsForTeam(uint32 Team) const
 
 bool Battleground::HasFreeSlots() const
 {
+    //npcbot
+    /*
+    //end npcbot
     return GetPlayersSize() < GetMaxPlayers();
+    //npcbot
+    */
+    return GetPlayersSize() + uint32(GetBots().size()) < GetMaxPlayers();
+    //end npcbot
 }
 
 void Battleground::BuildPvPLogDataPacket(WorldPacket& data)
