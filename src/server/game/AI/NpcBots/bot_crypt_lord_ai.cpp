@@ -180,7 +180,7 @@ public:
         void KilledUnit(Unit* u) override { bot_ai::KilledUnit(u); }
         void EnterEvadeMode(EvadeReason why = EVADE_REASON_OTHER) override { bot_ai::EnterEvadeMode(why); }
         void MoveInLineOfSight(Unit* u) override { bot_ai::MoveInLineOfSight(u); }
-        void JustDied(Unit* u) override { UnsummonLocusts(true); bot_ai::JustDied(u); }
+        void JustDied(Unit* u) override { UnsummonLocusts(true); UnsummonAll(false); bot_ai::JustDied(u); }
 
         void DoNonCombatActions(uint32 diff)
         {
@@ -362,8 +362,8 @@ public:
             }
 
             CheckAttackState();
-            if (!me->IsAlive() || !mytar->IsAlive())
-                return;
+            //if (!me->IsAlive() || !mytar->IsAlive())
+            //    return;
         }
 
         void ApplyClassDamageMultiplierMeleeSpell(int32& damage, SpellNonMeleeDamage& /*damageinfo*/, SpellInfo const* spellInfo, WeaponAttackType /*attackType*/, bool /*iscrit*/) const override
@@ -667,11 +667,6 @@ public:
             }
         }
 
-        void ResummonAll() override
-        {
-            ResummonCreatures(_minions);
-        }
-
         uint32 GetAIMiscValue(uint32 data) const override
         {
             switch (data)
@@ -820,7 +815,7 @@ public:
             static const uint32 ViableCreatureTypesMask =
                 (1 << (CREATURE_TYPE_BEAST-1)) | (1 << (CREATURE_TYPE_DRAGONKIN-1)) | (1 << (CREATURE_TYPE_HUMANOID-1));
 
-            return !c->IsAlive() && c->GetDisplayId() == c->GetNativeDisplayId() &&
+            return c->getDeathState() == DeathState::CORPSE && c->GetDisplayId() == c->GetNativeDisplayId() &&
                 !c->IsVehicle() && !c->isWorldBoss() && !c->IsDungeonBoss() &&
                 ((1 << (c->GetCreatureType()-1)) & ViableCreatureTypesMask) &&
                 !c->IsControlledByPlayer() && !c->IsNPCBot();

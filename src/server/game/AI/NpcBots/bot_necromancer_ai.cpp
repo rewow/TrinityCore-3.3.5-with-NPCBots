@@ -645,11 +645,6 @@ public:
                 _minions.erase(summon);
         }
 
-        void ResummonAll() override
-        {
-            ResummonCreatures(_minions);
-        }
-
         uint32 GetAIMiscValue(uint32 data) const override
         {
             switch (data)
@@ -740,7 +735,7 @@ public:
             static const uint32 ViableCreatureTypesMask =
                 (1 << (CREATURE_TYPE_BEAST-1)) | (1 << (CREATURE_TYPE_DRAGONKIN-1)) | (1 << (CREATURE_TYPE_HUMANOID-1));
 
-            return !c->IsAlive() && c->GetDisplayId() == c->GetNativeDisplayId() &&
+            return c->getDeathState() == DeathState::CORPSE && c->GetDisplayId() == c->GetNativeDisplayId() &&
                 !c->IsVehicle() && !c->isWorldBoss() && !c->IsDungeonBoss() &&
                 ((1 << (c->GetCreatureType()-1)) & ViableCreatureTypesMask) &&
                 !c->IsControlledByPlayer() && !c->IsNPCBot() && c->GetMaxHealth() >= me->GetMaxHealth() / 4;
