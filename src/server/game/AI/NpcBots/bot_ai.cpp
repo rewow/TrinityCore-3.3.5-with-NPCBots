@@ -3082,7 +3082,7 @@ void bot_ai::SetStats(bool force)
                 {
                     if (mainhand->GetTemplate()->Class == ITEM_CLASS_WEAPON &&
                         (mainhand->GetTemplate()->SubClass == ITEM_SUBCLASS_WEAPON_DAGGER ||
-                        mainhand->GetTemplate()->SubClass == ITEM_SUBCLASS_WEAPON_FIST))
+                        mainhand->GetTemplate()->SubClass == ITEM_SUBCLASS_WEAPON_FIST_WEAPON))
                         value += 5.f;
                 }
             }
@@ -11819,7 +11819,7 @@ bool bot_ai::_canUseOffHand() const
     if (protoMH->Class == ITEM_CLASS_WEAPON &&
         (protoMH->InventoryType == INVTYPE_WEAPON || protoMH->InventoryType == INVTYPE_WEAPONMAINHAND) &&
         (protoMH->SubClass == ITEM_SUBCLASS_WEAPON_AXE || protoMH->SubClass == ITEM_SUBCLASS_WEAPON_DAGGER ||
-        protoMH->SubClass == ITEM_SUBCLASS_WEAPON_FIST || protoMH->SubClass == ITEM_SUBCLASS_WEAPON_MACE ||
+        protoMH->SubClass == ITEM_SUBCLASS_WEAPON_FIST_WEAPON || protoMH->SubClass == ITEM_SUBCLASS_WEAPON_MACE ||
         protoMH->SubClass == ITEM_SUBCLASS_WEAPON_SWORD))
         return true;
 
@@ -12003,7 +12003,7 @@ bool bot_ai::_canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItem
                     case ITEM_SUBCLASS_WEAPON_SWORD2:
                     case ITEM_SUBCLASS_WEAPON_POLEARM:
                     case ITEM_SUBCLASS_WEAPON_STAFF:
-                    case ITEM_SUBCLASS_WEAPON_FIST:
+                    case ITEM_SUBCLASS_WEAPON_FIST_WEAPON:
                     case ITEM_SUBCLASS_WEAPON_DAGGER:
                     case ITEM_SUBCLASS_WEAPON_BOW:
                     case ITEM_SUBCLASS_WEAPON_CROSSBOW:
@@ -12042,7 +12042,7 @@ bool bot_ai::_canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItem
                     case ITEM_SUBCLASS_WEAPON_SWORD2:
                     case ITEM_SUBCLASS_WEAPON_POLEARM:
                     case ITEM_SUBCLASS_WEAPON_STAFF:
-                    case ITEM_SUBCLASS_WEAPON_FIST:
+                    case ITEM_SUBCLASS_WEAPON_FIST_WEAPON:
                     case ITEM_SUBCLASS_WEAPON_DAGGER:
                     case ITEM_SUBCLASS_WEAPON_BOW:
                     case ITEM_SUBCLASS_WEAPON_CROSSBOW:
@@ -12059,7 +12059,7 @@ bool bot_ai::_canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItem
                     case ITEM_SUBCLASS_WEAPON_AXE:
                     case ITEM_SUBCLASS_WEAPON_MACE:
                     case ITEM_SUBCLASS_WEAPON_SWORD:
-                    case ITEM_SUBCLASS_WEAPON_FIST:
+                    case ITEM_SUBCLASS_WEAPON_FIST_WEAPON:
                     case ITEM_SUBCLASS_WEAPON_DAGGER:
                     case ITEM_SUBCLASS_WEAPON_BOW:
                     case ITEM_SUBCLASS_WEAPON_CROSSBOW:
@@ -12102,7 +12102,7 @@ bool bot_ai::_canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItem
                     case ITEM_SUBCLASS_WEAPON_MACE2:
                     case ITEM_SUBCLASS_WEAPON_POLEARM:
                     case ITEM_SUBCLASS_WEAPON_STAFF:
-                    case ITEM_SUBCLASS_WEAPON_FIST:
+                    case ITEM_SUBCLASS_WEAPON_FIST_WEAPON:
                     case ITEM_SUBCLASS_WEAPON_DAGGER:
                         break;
                     default:
@@ -12117,7 +12117,7 @@ bool bot_ai::_canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItem
                     case ITEM_SUBCLASS_WEAPON_MACE:
                     case ITEM_SUBCLASS_WEAPON_MACE2:
                     case ITEM_SUBCLASS_WEAPON_STAFF:
-                    case ITEM_SUBCLASS_WEAPON_FIST:
+                    case ITEM_SUBCLASS_WEAPON_FIST_WEAPON:
                     case ITEM_SUBCLASS_WEAPON_DAGGER:
                         break;
                     default:
@@ -12166,7 +12166,7 @@ bool bot_ai::_canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItem
                     case ITEM_SUBCLASS_WEAPON_SWORD2:
                     case ITEM_SUBCLASS_WEAPON_POLEARM:
                     case ITEM_SUBCLASS_WEAPON_STAFF:
-                    case ITEM_SUBCLASS_WEAPON_FIST:
+                    case ITEM_SUBCLASS_WEAPON_FIST_WEAPON:
                     case ITEM_SUBCLASS_WEAPON_DAGGER:
                         break;
                     default:
@@ -12179,7 +12179,7 @@ bool bot_ai::_canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItem
                     case ITEM_SUBCLASS_WEAPON_AXE:
                     case ITEM_SUBCLASS_WEAPON_MACE:
                     case ITEM_SUBCLASS_WEAPON_SWORD:
-                    case ITEM_SUBCLASS_WEAPON_FIST:
+                    case ITEM_SUBCLASS_WEAPON_FIST_WEAPON:
                     case ITEM_SUBCLASS_WEAPON_DAGGER:
                         break;
                     default:
@@ -12415,7 +12415,7 @@ bool bot_ai::_canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItem
                         break;
                 }
                 break;
-            case ITEM_SUBCLASS_ARMOR_MISC:
+            case ITEM_SUBCLASS_ARMOR_MISCELLANEOUS:
                 switch (_botclass)
                 {
                     case BOT_CLASS_SPHYNX:

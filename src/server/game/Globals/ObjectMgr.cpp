@@ -3151,7 +3151,7 @@ void ObjectMgr::LoadItemTemplates()
         if (itemTemplate.Class >= MAX_ITEM_CLASS)
         {
             TC_LOG_ERROR("sql.sql", "Item (Entry: {}) has wrong Class value ({})", entry, itemTemplate.Class);
-            itemTemplate.Class = ITEM_CLASS_MISC;
+            itemTemplate.Class = ITEM_CLASS_MISCELLANEOUS;
         }
 
         if (itemTemplate.SubClass >= MaxItemSubclassValues[itemTemplate.Class])

@@ -573,10 +573,9 @@ void WorldSession::HandleGroupRaidConvertOpcode(WorldPacket & /*recvData*/)
     if (_player->InBattleground())
         return;
 
-    /** error handling **/
+    // error handling
     if (!group->IsLeader(GetPlayer()->GetGUID()) || group->GetMembersCount() < 2)
         return;
-    /********************/
 
     // everything's fine, do it (is it 0 (PARTY_OP_INVITE) correct code)
     SendPartyResult(PARTY_OP_INVITE, "", ERR_PARTY_RESULT_OK);
@@ -927,6 +926,17 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket &recvData)
     //npcbot: try send bot group member info
     if (Guid.IsCreature())
     {
+        if (!GetPlayer()->GetGroup() || !GetPlayer()->GetGroup()->IsMember(Guid))
+        {
+            WorldPacket data(SMSG_PARTY_MEMBER_STATS_FULL, 3+4+2);
+            data << uint8(0);
+            data << Guid.WriteAsPacked();
+            data << uint32(GROUP_UPDATE_FLAG_STATUS);
+            data << uint16(MEMBER_STATUS_OFFLINE);
+            SendPacket(&data);
+            return;
+        }
+
         uint32 creatureId = Guid.GetEntry();
         CreatureTemplate const* creatureTemplate = sObjectMgr->GetCreatureTemplate(creatureId);
         if (creatureTemplate && creatureTemplate->IsNPCBot())
