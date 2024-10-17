@@ -103,6 +103,7 @@ class TC_GAME_API BotMgr
         static bool IsNpcBotModEnabled();
         static bool IsNpcBotLogEnabled();
         static bool IsNpcBotDungeonFinderEnabled();
+        static bool IsNpcBotsPremadeEnabled();
         static bool DisplayEquipment();
         static bool ShowEquippedCloak();
         static bool ShowEquippedHelm();
@@ -115,6 +116,8 @@ class TC_GAME_API BotMgr
         static bool TransmogUseEquipmentSlots();
         static bool IsClassEnabled(uint8 m_class);
         static bool IsWanderingClassEnabled(uint8 m_class);
+        static bool EnableWanderingUntargetNpcQuestgiver();
+        static bool EnableWanderingUntargetNpcFlightmaster();
         static bool HideBotSpawns();
         static bool IsEnrageOnDimissEnabled();
         static bool IsBotStatsLimitsEnabled();

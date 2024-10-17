@@ -257,7 +257,7 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
 
     //npcbot: try to queue wandering bots
     //if (!isRated && !ArenaType && !arenateamid && !sBattlegroundMgr->isTesting() && !leader->GetGroup()) // Don't allow group queue
-    if (!isRated && !ArenaType && !arenateamid && !sBattlegroundMgr->isTesting())
+    if (!isRated && !isPremade && !ArenaType && !arenateamid && !sBattlegroundMgr->isTesting())
     {
         if (!BotDataMgr::GenerateBattlegroundBots(leader, grp, this, bracketEntry, ginfo))
         {
@@ -265,7 +265,6 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
                 BgTypeId, leader->GetDebugInfo().c_str(), grp ? grp->GetMembersCount() : 0u);
         }
     }
-
     // Ornfelt: Arena:
     //else if (!isRated && ArenaType && !sBattlegroundMgr->isTesting())
     else if (!isRated && ArenaType && !sBattlegroundMgr->isTesting() && !leader->GetGroup()) // Don't allow group queue
@@ -314,7 +313,7 @@ GroupQueueInfo* BattlegroundQueue::AddBotAsGroup(ObjectGuid guid, uint32 team, B
     if (ginfo->Team == HORDE)
         index++;
 
-    //TC_LOG_DEBUG("npcbots", "Adding NPCBot {} to BattlegroundQueue bgTypeId : {}, bracket_id : {}, index : {}", guid.GetEntry(), BgTypeId, bracketId, index);
+    TC_LOG_DEBUG("npcbots", "Adding NPCBot {} to BattlegroundQueue bgTypeId : {}, bracket_id : {}, index : {}", guid.GetEntry(), BgTypeId, bracketId, index);
 
     uint32 lastOnlineTime = GameTime::GetGameTimeMS();
 
