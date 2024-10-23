@@ -915,6 +915,16 @@ bool Unit::HasBreakableByDamageCrowdControlAura(Unit* excludeCasterChannel) cons
 
     if (victim->GetTypeId() == TYPEID_PLAYER)
         victim->ToPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HIT_RECEIVED, damage);
+    //npcbot
+    else if (victim->IsNPCBotOrPet())
+    {
+        if (attacker && !victim->ToCreature()->hasLootRecipient())
+            victim->ToCreature()->SetLootRecipient(attacker);
+        if (!attacker || attacker->IsControlledByPlayer() || (attacker->ToTempSummon() && attacker->ToTempSummon()->GetSummonerUnit() && attacker->ToTempSummon()->GetSummonerUnit()->IsPlayer()) ||
+            (attacker->IsNPCBotOrPet() && !attacker->ToCreature()->IsFreeBot()) || (attacker->GetCreator() && attacker->GetCreator()->IsPlayer()))
+            victim->ToCreature()->LowerPlayerDamageReq(health < damage ?  health : damage);
+    }
+    //end npcbot
     else if (!victim->IsControlledByPlayer() || victim->IsVehicle())
     {
         if (!victim->ToCreature()->hasLootRecipient())
@@ -2299,15 +2309,6 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(Unit const* victim, WeaponAttackTy
     int32 block_chance = int32(GetUnitBlockChance(attType, victim) * 100.0f);
     int32 parry_chance = int32(GetUnitParryChance(attType, victim) * 100.0f);
 
-    //npcbot - expertise
-    if (IsNPCBot())
-    {
-        int32 reductionFromExpertise = ToCreature()->GetCreatureExpertise() * 100 / 4;
-        dodge_chance -= reductionFromExpertise;
-        parry_chance -= reductionFromExpertise;
-    }
-    //end npcbot
-
     // melee attack table implementation
     // outcome priority:
     //   1. >    2. >    3. >       4. >    5. >   6. >       7. >  8.
@@ -2787,6 +2788,13 @@ float Unit::GetUnitDodgeChance(WeaponAttackType attType, Unit const* victim) con
     // Reduce dodge chance by attacker expertise rating
     if (GetTypeId() == TYPEID_PLAYER)
         chance -= ToPlayer()->GetExpertiseDodgeOrParryReduction(attType);
+    //npcbot - manual expertise instead of auras
+    else if (IsNPCBot())
+    {
+        chance -= ToCreature()->GetCreatureExpertise() * 25;
+        chance -= GetTotalAuraModifier(SPELL_AURA_MOD_EXPERTISE) * 25;
+    }
+    //end npcbot
     else
         chance -= GetTotalAuraModifier(SPELL_AURA_MOD_EXPERTISE) / 4.0f;
     return std::max(chance, 0.0f);
@@ -2841,6 +2849,13 @@ float Unit::GetUnitParryChance(WeaponAttackType attType, Unit const* victim) con
     // Reduce parry chance by attacker expertise rating
     if (GetTypeId() == TYPEID_PLAYER)
         chance -= ToPlayer()->GetExpertiseDodgeOrParryReduction(attType);
+    //npcbot - manual expertise instead of auras
+    else if (IsNPCBot())
+    {
+        chance -= ToCreature()->GetCreatureExpertise() * 25;
+        chance -= GetTotalAuraModifier(SPELL_AURA_MOD_EXPERTISE) * 25;
+    }
+    //end npcbot
     else
         chance -= GetTotalAuraModifier(SPELL_AURA_MOD_EXPERTISE) / 4.0f;
     return std::max(chance, 0.0f);
