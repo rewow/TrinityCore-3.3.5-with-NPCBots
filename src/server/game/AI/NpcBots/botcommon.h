@@ -1,6 +1,7 @@
 #ifndef _BOTCOMMON_H
 #define _BOTCOMMON_H
 
+#include "botdefine.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include "SpellAuraDefines.h"
@@ -15,6 +16,8 @@ Original patch from: LordPsyan https://bitbucket.org/lordpsyan/trinitycore-patch
 
 constexpr std::size_t MAX_BOT_LOG_PARAMS = 5;
 constexpr std::size_t MAX_BOT_LOG_PARAM_LENGTH = 50;
+constexpr std::size_t MAX_BOT_ITEM_SET_NAME_LENGTH = 30;
+constexpr uint8 BOT_GOSSIP_MAX_ITEMS = 32; // Client limitation 3.3.5 code confirmed
 
 struct Position;
 
@@ -372,9 +375,10 @@ enum BotPetTypes
 
     //DK
     BOT_PET_GHOUL                       = 70538,
-    BOT_PET_GARGOYLE                    = 70539,//NYI
-    BOT_PET_DANCING_RUNE_WEAPON         = 70540,//NYI
-    BOT_PET_AOD_GHOUL                   = 70541,//NYI
+
+    BOT_PET_REUSE_1                     = 70539,//REUSE, was BOT_PET_GARGOYLE
+    BOT_PET_REUSE_2                     = 70540,//REUSE, was BOT_PET_DANCING_RUNE_WEAPON
+    BOT_PET_REUSE_3                     = 70541,//REUSE, was BOT_PET_AOD_GHOUL
 
     //Priest
     BOT_PET_SHADOWFIEND                 = 70542,
@@ -452,6 +456,24 @@ enum BotEquipSlot : uint8
 };
 
 constexpr uint8 BOT_TRANSMOG_INVENTORY_SIZE = 13; // BOT_SLOT_BODY + 1
+constexpr uint8 MAX_BOT_EQUIPMENT_SETS = BOT_GOSSIP_MAX_ITEMS - 2;
+
+enum class BotEquipResult : uint8
+{
+    BOT_EQUIP_RESULT_OK                         = 0,
+
+    BOT_EQUIP_RESULT_FAIL_NO_BAG_SPACE          = 1, //unused
+    BOT_EQUIP_RESULT_FAIL_NO_BANK_SPACE         = 2,
+    BOT_EQUIP_RESULT_FAIL_NO_RECEIVER           = 3,
+    BOT_EQUIP_RESULT_FAIL_INVALID_RECEIVER      = 4,
+    BOT_EQUIP_RESULT_FAIL_NO_ITEM               = 5,
+    BOT_EQUIP_RESULT_FAIL_SAME_ID               = 6,
+    BOT_EQUIP_RESULT_FAIL_WANDERER              = 7,
+    BOT_EQUIP_RESULT_FAIL_LINKED_UNEQUIP_FAILED = 8,
+    BOT_EQUIP_RESULT_FAIL_LINKED_RESET_FAILED   = 9,
+    BOT_EQUIP_RESULT_FAIL_CANT_EQUIP            = 10,
+    BOT_EQUIP_RESULT_FAIL_ITEM_CONFLICT         = 11,
+};
 
 enum BotStatMods : uint8
 {
@@ -531,8 +553,8 @@ enum BotAIResetType
 enum BotMovementType
 {
     BOT_MOVE_POINT                      = 1,
-    //BOT_MOVE_FOLLOW
-    BOT_MOVE_CHASE
+    BOT_MOVE_CHASE,
+    BOT_MOVE_JUMP
 };
 
 enum BotCommandStates : uint32

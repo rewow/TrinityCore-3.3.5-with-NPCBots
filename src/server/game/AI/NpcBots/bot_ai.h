@@ -149,6 +149,7 @@ class bot_ai : public CreatureAI
         void ApplyBotCritMultiplierAll(Unit const* victim, float& crit_chance, SpellInfo const* spellInfo, SpellSchoolMask schoolMask, WeaponAttackType attackType) const;
         void ApplyBotSpellCostMods(SpellInfo const* spellInfo, int32& cost) const;
         void ApplyBotSpellCastTimeMods(SpellInfo const* spellInfo, int32& casttime) const;
+        void ApplyBotSpellNotLoseCastTimeMods(SpellInfo const* spellInfo, int32& delayReduce) const;
         void ApplyBotSpellCooldownMods(SpellInfo const* spellInfo, uint32& cooldown) const;
         void ApplyBotSpellCategoryCooldownMods(SpellInfo const* spellInfo, uint32& cooldown) const;
         void ApplyBotSpellGlobalCooldownMods(SpellInfo const* spellInfo, float& cooldown) const;
@@ -177,6 +178,9 @@ class bot_ai : public CreatureAI
         //wandering bots
         bool IsWanderer() const { return _wanderer; }
         void SetWanderer();
+        static bool IsWanderNodeAvailableForBotFaction(WanderNode const* wp, uint32 factionTemplateId, bool teleport);
+        WanderNode const* GetClosestWanderNode() const;
+        WanderNode const* GetNextWanderNode(Position const* fromPos, uint8 lvl, bool random) const;
         WanderNode const* GetNextTravelNode(Position const* from, bool random) const;
         WanderNode const* GetNextBGTravelNode() const;
         void OnWanderNodeReached();
@@ -270,8 +274,9 @@ class bot_ai : public CreatureAI
         Item* GetEquips(uint8 slot) const { return _equips[slot]; }
         Item* GetEquipsByGuid(ObjectGuid itemGuid) const;
         uint32 GetEquipDisplayId(uint8 slot) const;
-        bool UnEquipAll(ObjectGuid receiver);
-        bool HasRealEquipment() const;
+        [[nodiscard]] BotEquipResult UnEquipAll(ObjectGuid receiver, bool store_to_bank);
+        uint8 GetRealEquippedItemsCount() const;
+        bool HasRealEquipment() const { return !!GetRealEquippedItemsCount(); }
         float GetAverageItemLevel() const;
         std::pair<float, float> GetBotGearScores() const;
 
@@ -283,6 +288,7 @@ class bot_ai : public CreatureAI
         void OnBotOwnerSpellGo(Spell const* spell, bool ok = true);
         void OnBotChannelFinish(Spell const* spell);
         void OnOwnerVehicleDamagedBy(Unit* attacker);
+        void OnAttackStop(Unit const* target);
         virtual void OnClassSpellStart(SpellInfo const* /*spellInfo*/) {}
         virtual void OnClassSpellGo(SpellInfo const* /*spell*/) {}
         virtual void OnClassChannelFinish(Spell const* /*spell*/) {}
@@ -484,6 +490,7 @@ class bot_ai : public CreatureAI
         virtual void ApplyClassSpellCritMultiplierAll(Unit const* /*victim*/, float& /*crit_chance*/, SpellInfo const* /*spellInfo*/, SpellSchoolMask /*schoolMask*/, WeaponAttackType /*attackType*/) const {}
         virtual void ApplyClassSpellCostMods(SpellInfo const* /*spellInfo*/, int32& /*cost*/) const {}
         virtual void ApplyClassSpellCastTimeMods(SpellInfo const* /*spellInfo*/, int32& /*casttime*/) const {}
+        virtual void ApplyClassSpellNotLoseCastTimeMods(SpellInfo const* /*spellInfo*/, int32& /*delayReduce*/) const {}
         virtual void ApplyClassSpellCooldownMods(SpellInfo const* /*spellInfo*/, uint32& /*cooldown*/) const {}
         virtual void ApplyClassSpellCategoryCooldownMods(SpellInfo const* /*spellInfo*/, uint32& /*cooldown*/) const {}
         virtual void ApplyClassSpellGlobalCooldownMods(SpellInfo const* /*spellInfo*/, float& /*cooldown*/) const {}
@@ -631,14 +638,15 @@ class bot_ai : public CreatureAI
         void _autoLootCreatureItems(Player* receiver, Creature* creature, uint32 lootQualityMask, uint32 lootThreshold) const;
         void _autoLootCreature(Creature* creature);
 
-        bool _canUseOffHand() const;
+        bool _canUseOffHand(ItemTemplate const* with = nullptr) const;
         bool _canUseRanged() const;
         bool _canUseRelic() const;
+        bool _canCombineWeapons(ItemTemplate const* mh, ItemTemplate const* oh) const;
         bool _canEquip(ItemTemplate const* newProto, uint8 slot, bool ignoreItemLevel, Item const* newItem = nullptr) const;
         void _removeEquipment(uint8 slot);
-        bool _unequip(uint8 slot, ObjectGuid receiver);
-        bool _equip(uint8 slot, Item* newItem, ObjectGuid receiver);
-        bool _resetEquipment(uint8 slot, ObjectGuid receiver);
+        [[nodiscard]] BotEquipResult _unequip(uint8 slot, ObjectGuid receiver, bool store_to_bank, bool on_equip_from_bank = false);
+        [[nodiscard]] BotEquipResult _equip(uint8 slot, Item* newItem, ObjectGuid receiver, bool store_to_bank, bool from_bank = false);
+        [[nodiscard]] BotEquipResult _resetEquipment(uint8 slot, ObjectGuid receiver, bool store_to_bank);
 
         void _castBotItemUseSpell(Item const* item, SpellCastTargets const& targets/*, uint8 cast_count = 0, uint32 glyphIndex = 0*/);
 

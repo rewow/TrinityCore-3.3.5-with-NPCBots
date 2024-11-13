@@ -510,15 +510,7 @@ void Object::ClearUpdateMask(bool remove)
 
 void Object::BuildFieldsUpdate(Player* player, UpdateDataMapType& data_map) const
 {
-    UpdateDataMapType::iterator iter = data_map.find(player);
-
-    if (iter == data_map.end())
-    {
-        std::pair<UpdateDataMapType::iterator, bool> p = data_map.emplace(player, UpdateData());
-        ASSERT(p.second);
-        iter = p.first;
-    }
-
+    UpdateDataMapType::iterator iter = data_map.try_emplace(player).first;
     BuildValuesUpdateBlockForPlayer(&iter->second, iter->first);
 }
 
@@ -3128,8 +3120,12 @@ bool WorldObject::IsValidAttackTarget(WorldObject const* target, SpellInfo const
     }
     //end npcbot
 
-    //npcbot
+    //npcbot: allow bots and their summons to ignore this rule
     if (unit && unitTarget && (unit->IsNPCBotOrPet() || unitTarget->IsNPCBotOrPet()))
+    {}
+    else if (unit && unit->GetOwnerGUID() && unit->GetOwnerGUID().IsCreature() && sObjectMgr->GetCreatureTemplate(unit->GetOwnerGUID().GetEntry())->IsNPCBotOrPet())
+    {}
+    else if (unitTarget && unitTarget->GetOwnerGUID() && unitTarget->GetOwnerGUID().IsCreature() && sObjectMgr->GetCreatureTemplate(unitTarget->GetOwnerGUID().GetEntry())->IsNPCBotOrPet())
     {}
     else
     //end npcbot

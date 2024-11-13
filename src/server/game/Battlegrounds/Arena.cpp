@@ -25,12 +25,6 @@
 #include "WorldSession.h"
 #include "WorldStatePackets.h"
 
-// Ornfelt: npcbot
-#include "bot_ai.h"
-#include "botdatamgr.h"
-#include "botmgr.h"
-//end npcbot
-
 void ArenaScore::AppendToPacket(WorldPacket& data)
 {
     data << uint64(PlayerGuid);
@@ -102,6 +96,81 @@ void Arena::AddPlayer(Player* player)
     UpdateArenaWorldState();
 }
 
+// Ornfelt: npcbot
+//void Arena::AddBot(Creature* bot)
+//{
+//    ObjectGuid guid = bot->GetGUID();
+//    TeamId teamId = BotDataMgr::GetTeamIdForFaction(bot->GetFaction());
+//
+//    Battleground::AddBot(bot);
+//    PlayerScores.emplace(bot->GetGUID().GetCounter(), new ArenaScore(bot->GetGUID(), teamId));
+//
+//    if (teamId == TEAM_ALLIANCE) // gold
+//    {
+//        if (teamId == TEAM_HORDE)
+//            bot->CastSpell(bot, SPELL_HORDE_GOLD_FLAG, true);
+//        else
+//            bot->CastSpell(bot, SPELL_ALLIANCE_GOLD_FLAG, true);
+//    }
+//    else // green
+//    {
+//        if (teamId == TEAM_HORDE)
+//            bot->CastSpell(bot, SPELL_HORDE_GREEN_FLAG, true);
+//        else
+//            bot->CastSpell(bot, SPELL_ALLIANCE_GREEN_FLAG, true);
+//    }
+//
+//    UpdateArenaWorldState();
+//}
+//
+//void Arena::HandleBotKillPlayer(Creature* killer, Player* victim)
+//{
+//    if (GetStatus() != STATUS_IN_PROGRESS)
+//        return;
+//
+//    Battleground::HandleBotKillPlayer(killer, victim);
+//    UpdateArenaWorldState();
+//    CheckWinConditions();
+//}
+//void Arena::HandleBotKillBot(Creature* killer, Creature* victim)
+//{
+//    if (GetStatus() != STATUS_IN_PROGRESS)
+//        return;
+//
+//    Battleground::HandleBotKillBot(killer, victim);
+//    UpdateArenaWorldState();
+//    CheckWinConditions();
+//}
+//void Arena::HandlePlayerKillBot(Creature* victim, Player* killer)
+//{
+//    if (GetStatus() != STATUS_IN_PROGRESS)
+//        return;
+//
+//    Battleground::HandlePlayerKillBot(victim, killer);
+//    UpdateArenaWorldState();
+//    CheckWinConditions();
+//}
+//end Ornfelt npcbot
+
+//npcbot
+void Arena::AddBot(Creature* bot)
+{
+    ASSERT(bot->IsNPCBot() && !bot->IsFreeBot());
+
+    bool const isInBattleground = IsPlayerInBattleground(bot->GetGUID());
+    Battleground::AddBot(bot);
+
+    uint32 botteam = bot->GetBotOwner()->GetBGTeam();
+
+    if (!isInBattleground)
+        BotScores[bot->GetEntry()] = new ArenaScore(bot->GetGUID(), botteam);
+
+    //No flags - handled by AI
+
+    UpdateArenaWorldState();
+}
+//end npcbot
+
 void Arena::RemovePlayer(Player* /*player*/, ObjectGuid /*guid*/, uint32 /*team*/)
 {
     if (GetStatus() == STATUS_WAIT_LEAVE)
@@ -110,6 +179,17 @@ void Arena::RemovePlayer(Player* /*player*/, ObjectGuid /*guid*/, uint32 /*team*
     UpdateArenaWorldState();
     CheckWinConditions();
 }
+
+//npcbot
+void Arena::RemoveBot(ObjectGuid /*guid*/)
+{
+    if (GetStatus() == STATUS_WAIT_LEAVE)
+        return;
+
+    UpdateArenaWorldState();
+    CheckWinConditions();
+}
+//end npcbot
 
 void Arena::FillInitialWorldStates(WorldPackets::WorldState::InitWorldStates& packet)
 {
@@ -134,38 +214,11 @@ void Arena::HandleKillPlayer(Player* player, Player* killer)
     CheckWinConditions();
 }
 
-// Ornfelt: npcbot
-void Arena::AddBot(Creature* bot)
-{
-    ObjectGuid guid = bot->GetGUID();
-    TeamId teamId = BotDataMgr::GetTeamIdForFaction(bot->GetFaction());
-
-    Battleground::AddBot(bot);
-    PlayerScores.emplace(bot->GetGUID().GetCounter(), new ArenaScore(bot->GetGUID(), teamId));
-
-    if (teamId == TEAM_ALLIANCE) // gold
-    {
-        if (teamId == TEAM_HORDE)
-            bot->CastSpell(bot, SPELL_HORDE_GOLD_FLAG, true);
-        else
-            bot->CastSpell(bot, SPELL_ALLIANCE_GOLD_FLAG, true);
-    }
-    else // green
-    {
-        if (teamId == TEAM_HORDE)
-            bot->CastSpell(bot, SPELL_HORDE_GREEN_FLAG, true);
-        else
-            bot->CastSpell(bot, SPELL_ALLIANCE_GREEN_FLAG, true);
-    }
-
-    UpdateArenaWorldState();
-}
-
+//npcbot
 void Arena::HandleBotKillPlayer(Creature* killer, Player* victim)
 {
     if (GetStatus() != STATUS_IN_PROGRESS)
         return;
-
     Battleground::HandleBotKillPlayer(killer, victim);
     UpdateArenaWorldState();
     CheckWinConditions();
@@ -174,7 +227,6 @@ void Arena::HandleBotKillBot(Creature* killer, Creature* victim)
 {
     if (GetStatus() != STATUS_IN_PROGRESS)
         return;
-
     Battleground::HandleBotKillBot(killer, victim);
     UpdateArenaWorldState();
     CheckWinConditions();
@@ -183,7 +235,6 @@ void Arena::HandlePlayerKillBot(Creature* victim, Player* killer)
 {
     if (GetStatus() != STATUS_IN_PROGRESS)
         return;
-
     Battleground::HandlePlayerKillBot(victim, killer);
     UpdateArenaWorldState();
     CheckWinConditions();
@@ -217,6 +268,35 @@ void Arena::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sendPacket
     // remove player
     Battleground::RemovePlayerAtLeave(guid, transport, sendPacket);
 }
+
+//npcbot
+void Arena::RemoveBotAtLeave(ObjectGuid guid)
+{
+    //if (isRated() && GetStatus() == STATUS_IN_PROGRESS)
+    //{
+    //    BattlegroundBotMap::const_iterator itr = m_Bots.find(guid);
+    //    if (itr != m_Bots.end()) // check if the player was a participant of the match, or only entered through gm command (appear)
+    //    {
+    //        // if the player was a match participant, calculate rating
+    //        uint32 team = itr->second.Team;
+
+    //        ArenaTeam* winnerArenaTeam = sArenaTeamMgr->GetArenaTeamById(GetArenaTeamIdForTeam(GetOtherTeam(team)));
+    //        ArenaTeam* loserArenaTeam = sArenaTeamMgr->GetArenaTeamById(GetArenaTeamIdForTeam(team));
+
+    //        // left a rated match while the encounter was in progress, consider as loser
+    //        if (winnerArenaTeam && loserArenaTeam && winnerArenaTeam != loserArenaTeam)
+    //        {
+    //            if (Player* player = _GetPlayer(itr->first, itr->second.OfflineRemoveTime != 0, "Arena::RemovePlayerAtLeave"))
+    //                loserArenaTeam->MemberLost(player, GetArenaMatchmakerRating(GetOtherTeam(team)));
+    //            else
+    //                loserArenaTeam->OfflineMemberLost(guid, GetArenaMatchmakerRating(GetOtherTeam(team)));
+    //        }
+    //    }
+    //}
+
+    Battleground::RemoveBotAtLeave(guid);
+}
+//end npcbot
 
 void Arena::CheckWinConditions()
 {

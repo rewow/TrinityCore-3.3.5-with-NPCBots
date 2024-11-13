@@ -52,17 +52,19 @@ class TC_GAME_API Arena : public Battleground
         void AddPlayer(Player* player) override;
         void RemovePlayer(Player* /*player*/, ObjectGuid /*guid*/, uint32 /*team*/) override;
 
-        void FillInitialWorldStates(WorldPackets::WorldState::InitWorldStates& packet) override;
-        void UpdateArenaWorldState();
-
-        void HandleKillPlayer(Player* player, Player* killer) override;
-
-        // Ornfelt: npcbot
+        //npcbot
         void AddBot(Creature* bot) override;
+        void RemoveBotAtLeave(ObjectGuid guid) override;
+        void RemoveBot(ObjectGuid /*guid*/) override;
         void HandleBotKillPlayer(Creature* killer, Player* victim) override;
         void HandleBotKillBot(Creature* killer, Creature* victim) override;
         void HandlePlayerKillBot(Creature* victim, Player* killer) override;
         //end npcbot
+
+        void FillInitialWorldStates(WorldPackets::WorldState::InitWorldStates& packet) override;
+        void UpdateArenaWorldState();
+
+        void HandleKillPlayer(Player* player, Player* killer) override;
 
     private:
         void RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sendPacket) override;

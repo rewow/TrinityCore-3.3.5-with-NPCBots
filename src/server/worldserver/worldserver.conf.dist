@@ -4500,12 +4500,30 @@ NpcBot.Gossip.ShowEquipmentListItems = 0
 
 #
 #    NpcBot.GearBank.Enable
-#        Description: Enable unlimited extra gear storage (accessible through gossip menu).
-#        Note: Unlimited storage creates an 'unlimited bags' exploit, you have been warned.
-#        Default:     0 - (Disabled)
-#                     1 - (Enabled)
+#        Description: Enable extra bot gear storage, accessed through gossip menu (per player).
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
 
-NpcBot.GearBank.Enable = 0
+NpcBot.GearBank.Enable = 1
+
+#
+#    NpcBot.GearBank.Capacity
+#        Description: Maximum number of items player can keep in bot gear storage.
+#        Note:        This parameter only affects player's ability to *deposit* items.
+#        Default:     40 - (Maximum 40 items)
+#                     0  - (Unlimited capacity)
+
+NpcBot.GearBank.Capacity = 40
+
+#
+#    NpcBot.GearBank.EquipmentSets
+#        Description: Enable players to create bot equipment sets from items currently equipped
+#                     on a bot, allowing to quickly swap bot equipment using gear bank as storage.
+#        Default:     0  - (Disabled)
+#                     10 - (Enabled, allow to keep up to 10 equipment sets per player)
+#                     30 - (Absolute maximum to fit on a single page, this is a hard limit)
+
+NpcBot.GearBank.EquipmentSets = 0
 
 #
 #    NpcBot.Classes.<Class>.Enable
@@ -4650,6 +4668,18 @@ NpcBot.WanderingBots.Continents.Maps = 0,1,530,571
 NpcBot.WanderingBots.Continents.XPGain = 1.0
 
 #
+#    NpcBot.WanderingBots.MaxItemLevel.Levels
+#        Description: Maximum item ilevel to generate for wandering bots per level bracket:
+#                     0-9, 10-19, 20,29, ... , 70-79, 80+.
+#        Note:        If item generation attempt fails becuse of item ilevel restriction
+#                     the item will be generated again with this restriction ignored
+#        Example:     0,0,0,0,0,0,0,0,200 makes level 80+ wandering bots only generate
+#                     items of ilevel 200 or less
+#        Default:     0,0,0,0,0,0,0,0,0
+
+NpcBot.WanderingBots.MaxItemLevel.Levels = 0,0,0,0,0,0,0,0,0
+
+#
 #    NpcBot.WanderingBots.BG.Enable
 #        Description: Allow wandering bots generation for Battlegrounds.
 #        Note:        Bots are temporarily borrowed from non-spawned bots pool.
@@ -4682,14 +4712,14 @@ NpcBot.WanderingBots.BG.CapLevelByFirstPlayer = 0
 #        Default:     30 - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.AV)
 #                     8  - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.WS)
 #                     12 - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.AB)
-#                     0  - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.EY) (NYI, Disabled)
+#                     12 - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.EY)
 #                     0  - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.SA) (NYI, Disabled)
 #                     0  - (NpcBot.WanderingBots.BG.TargetTeamPlayersCount.IC) (NYI, Disabled)
 
 NpcBot.WanderingBots.BG.TargetTeamPlayersCount.AV = 30
 NpcBot.WanderingBots.BG.TargetTeamPlayersCount.WS = 8
 NpcBot.WanderingBots.BG.TargetTeamPlayersCount.AB = 12
-NpcBot.WanderingBots.BG.TargetTeamPlayersCount.EY = 0
+NpcBot.WanderingBots.BG.TargetTeamPlayersCount.EY = 12
 NpcBot.WanderingBots.BG.TargetTeamPlayersCount.SA = 0
 NpcBot.WanderingBots.BG.TargetTeamPlayersCount.IC = 0
 
