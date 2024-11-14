@@ -155,7 +155,7 @@ void Arena::AddPlayer(Player* player)
 //npcbot
 void Arena::AddBot(Creature* bot)
 {
-    ASSERT(bot->IsNPCBot() && !bot->IsFreeBot());
+    //ASSERT(bot->IsNPCBot() && !bot->IsFreeBot());
 
     bool const isInBattleground = IsPlayerInBattleground(bot->GetGUID());
     Battleground::AddBot(bot);
