@@ -163,8 +163,6 @@ static void ApplyBotPercentModFloatVar(float &var, float val, bool apply)
 
 static uint16 __rand; //calculated for each bot separately once every updateAI tick
 
-static std::set<uint32> BotCustomSpells;
-
 bot_ai::bot_ai(Creature* creature) : CreatureAI(creature),
     _botData(const_cast<NpcBotData*>(BotDataMgr::SelectNpcBotData(creature->GetEntry()))),
     _botExtras(const_cast<NpcBotExtras*>(BotDataMgr::SelectNpcBotExtras(creature->GetEntry())))
@@ -275,6 +273,8 @@ bot_ai::bot_ai(Creature* creature) : CreatureAI(creature),
 
     _wmoAreaUpdateTimer = 0;
 
+    _rentTimer = 0;
+
     _contestedPvPTimer = 0;
     _groupUpdateTimer = BOT_GROUP_UPDATE_TIMER;
 
@@ -346,8 +346,7 @@ const std::string& bot_ai::LocalizedNpcText(Player const* forPlayer, uint32 text
 
         if (!unk_botstrings.contains(textId))
         {
-            BOT_LOG_ERROR("entities.player", "NPCBots: bot text string #{} is not localized, at least for {}",
-                textId, localeNames[loc]);
+            BOT_LOG_ERROR("entities.player", "NPCBots: bot text string #{} is not localized, at least for {}", textId, localeNames[loc]);
 
             std::ostringstream msg;
             msg << (loc == DEFAULT_LOCALE ? "<undefined string " : "<unlocalized string ") << textId << ">";
@@ -604,7 +603,10 @@ void bot_ai::ResetBotAI(uint8 resetType)
     if (resetType & BOTAI_RESET_MASK_RESET_MASTER)
         master = reinterpret_cast<Player*>(me);
     if (resetType & BOTAI_RESET_MASK_ABANDON_MASTER)
+    {
         _ownerGuid = 0;
+        _rentTimer = 0;
+    }
     if (resetType == BOTAI_RESET_INIT || resetType == BOTAI_RESET_LOGOUT)
     {
         _checkOwershipTimer = (BotMgr::GetOwnershipExpireTime() && _botData->owner) ? (resetType == BOTAI_RESET_INIT) ? 1000 : CalculateOwnershipCheckTime() : 0;
@@ -1405,7 +1407,7 @@ void bot_ai::BuffAndHealGroup(uint32 diff)
         if (HealTarget(me, diff))
             return;
 
-        if (me->GetFaction() == 14 || me->HasAura(BERSERK))
+        if (me->GetFaction() == FACTION_TEMPLATE_NEUTRAL_HOSTILE || me->HasAura(BERSERK))
             return;
 
         std::list<Unit*> targets2;
@@ -1660,7 +1662,7 @@ void bot_ai::ResurrectGroup(uint32 spell_id)
 
     if (IAmFree())
     {
-        if (me->GetFaction() == 14 || me->HasAura(BERSERK))
+        if (me->GetFaction() == FACTION_TEMPLATE_NEUTRAL_HOSTILE || me->HasAura(BERSERK))
             return;
 
         WorldObject* playerOrCorpse = GetNearbyRezTarget();
@@ -1826,7 +1828,7 @@ void bot_ai::CureGroup(uint32 cureSpell, uint32 diff)
         if (botPet && !me->IsInCombat() && _canCureTarget(botPet, cureSpell))
             targets.push_back(botPet);
 
-        if (!(me->GetFaction() == 14 || me->HasAura(BERSERK)))
+        if (!(me->GetFaction() == FACTION_TEMPLATE_NEUTRAL_HOSTILE || me->HasAura(BERSERK)))
         {
             std::list<Unit*> targets1;
             GetNearbyFriendlyTargetsList(targets1, 30);
@@ -3632,7 +3634,7 @@ bool bot_ai::IsInBotParty(Unit const* unit) const
 
     if (IAmFree())
     {
-        if (me->GetFaction() == 14 || unit->GetFaction() == 14)
+        if (me->GetFaction() == FACTION_TEMPLATE_NEUTRAL_HOSTILE || unit->GetFaction() == FACTION_TEMPLATE_NEUTRAL_HOSTILE)
             return false;
 
         if (me->HasByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP) ||
@@ -3789,13 +3791,21 @@ bool bot_ai::CanBotAttack(Unit const* target, int8 byspell, bool secondary) cons
         return false;
     if (target->IsCombatDisallowed())
         return false;
+    if (!target->IsVisible())
+        return false;
+    if (!target->isTargetableForAttack(false))
+        return false;
+    if (!target->InSamePhase(me) && !CanSeeEveryone())
+        return false;
+    if (byspell != -1 && target->IsTotem())
+        return false;
     if (target->CanHaveThreatList() && GetEngageTimer() > lastdiff)
         return false;
     if (!BotMgr::IsPvPEnabled() && me->IsPvP() && target->IsControlledByPlayer())
         return false;
     if (me->GetFaction() == 35 && IAmFree() && target->GetTypeId() == TYPEID_UNIT && target->GetVictim() != me)
         return false;
-    if ((target->GetFaction() == 35 || target->GetFaction() == me->GetFaction()) && me->GetFaction() != 14)
+    if ((target->GetFaction() == 35 || target->GetFaction() == me->GetFaction()) && me->GetFaction() != FACTION_TEMPLATE_NEUTRAL_HOSTILE)
         return false;
     if (!CanBotAttackOnVehicle())
         return false;
@@ -3808,6 +3818,13 @@ bool bot_ai::CanBotAttack(Unit const* target, int8 byspell, bool secondary) cons
             return false;
         if (BotMgr::EnableWanderingUntargetNpcFlightmaster() && target->IsTaxi())
             return false;
+        //do not attack friendly targets in FFAPvP mode
+        if (me->IsFFAPvP() && me->GetFaction() == FACTION_TEMPLATE_NEUTRAL_HOSTILE)
+        {
+            uint32 base_faction = BotDataMgr::GetDefaultFactionForBotRace(me->GetRace());
+            if (me->GetFaction() != base_faction && Unit::GetFactionReactionTo(sFactionTemplateStore.LookupEntry(base_faction), target) >= REP_FRIENDLY)
+                return false;
+        }
     }
 
     if (IAmFree())
@@ -3861,16 +3878,37 @@ bool bot_ai::CanBotAttack(Unit const* target, int8 byspell, bool secondary) cons
         }
     }
 
-    return
-        ((master->IsInCombat() || target->IsInCombat() || IsWanderer() || (IAmFree() && me->GetFaction() == 14) || pulling) &&
-        target->IsVisible() && target->isTargetableForAttack(false) && me->IsValidAttackTarget(target) &&
-        (!master->IsAlive() || target->IsControlledByPlayer() || pulling ||
-        (followdist > 0 && (master->GetDistance(target) <= foldist || HasBotCommandState(BOT_COMMAND_STAY)))) &&//if master is killed pursue to the end
-        !IsInBotParty(target) && (target->InSamePhase(me) || CanSeeEveryone()) &&
-        (!HasBotCommandState(BOT_COMMAND_STAY) ||
-        ((!IsRanged() && !secondary) ? me->IsWithinMeleeRange(target) : me->GetDistance(target) <= foldist)) &&//if stationery check own distance
-        (byspell == -1 || !target->IsTotem()) &&
-        (byspell == -1 || !mainMask || !target->IsImmunedToDamage(SpellSchoolMask(mainMask))));
+    if (master->IsInCombat() || target->IsInCombat() || IsWanderer() || (IAmFree() && me->GetFaction() == FACTION_TEMPLATE_NEUTRAL_HOSTILE) || pulling)
+    {
+        //if master is killed pursue to the end)
+        if (!master->IsAlive() || target->IsControlledByPlayer() || pulling || (followdist > 0 && (master->GetDistance(target) <= foldist || HasBotCommandState(BOT_COMMAND_STAY))))
+        {
+            //if stationery check own distance
+            if (!HasBotCommandState(BOT_COMMAND_STAY) || ((!IsRanged() && !secondary) ? me->IsWithinMeleeRange(target) : me->GetDistance(target) <= foldist))
+            {
+                if (byspell == -1 || !mainMask || !target->IsImmunedToDamage(SpellSchoolMask(mainMask)))
+                {
+                    if (me->IsValidAttackTarget(target))
+                    {
+                        if (!IsInBotParty(target))
+                            return true;
+
+                        //some friends need to be attacked when charmed
+                        switch (target->HasAuraType(SPELL_AURA_MOD_CHARM) ? target->GetAuraEffectsByType(SPELL_AURA_MOD_CHARM).front()->GetId() : 0)
+                        {
+                            case 17244:
+                            case 17246: //Possess (Baroness Anastari, Stratholme, 17244 -> 17246)
+                                return true;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
 }
 bool bot_ai::CanBotAttackOnVehicle() const
 {
@@ -4039,6 +4077,20 @@ std::tuple<Unit*, Unit*> bot_ai::_getTargets(bool byspell, bool ranged, bool &re
             }
         }
     }
+
+    //check charmed master
+    if (!IAmFree() && master->HasAuraType(SPELL_AURA_MOD_CHARM))
+    {
+        switch (master->GetAuraEffectsByType(SPELL_AURA_MOD_CHARM).front()->GetId())
+        {
+            case 17244:
+            case 17246: //Possess (Baroness Anastari, Stratholme, 17244 -> 17246)
+                return { master, master };
+            default:
+                break;
+        }
+    }
+
     //maps
     if (!IAmFree() && me->GetMap()->GetEntry() && !me->GetMap()->GetEntry()->IsWorldMap())
     {
@@ -4484,7 +4536,7 @@ std::tuple<Unit*, Unit*> bot_ai::_getTargets(bool byspell, bool ranged, bool &re
     }
 
     bool canAttack = mytar && CanBotAttack(mytar, byspell);
-    if (mytar && (!IAmFree() || me->GetDistance(mytar) < float(BOT_MAX_CHASE_RANGE)) && canAttack &&/* !InDuel(mytar) &&*/
+    if (canAttack && (!IAmFree() || me->GetDistance(mytar) < float(BOT_MAX_CHASE_RANGE)) &&/* !InDuel(mytar) &&*/
         !(mytar->GetVictim() != nullptr && IsTank() && IsTank(mytar->GetVictim())))
     {
         //BOT_LOG_ERROR("entities.player", "bot {} continues attack its target {}", me->GetName(), mytar->GetName());
@@ -4756,6 +4808,7 @@ bool bot_ai::CheckAttackTarget()
                 Evade();
         }
 
+        _lastTargetGuid = ObjectGuid::Empty;
         return false;
     }
 
@@ -7881,7 +7934,7 @@ bool bot_ai::OnGossipHello(Player* player, uint32 /*option*/)
     {
         if (IAmFree() && !IsWanderer())
         {
-            uint32 cost = BotMgr::GetNpcBotCost(player->GetLevel(), _botclass);
+            uint32 cost = BotMgr::GetNpcBotCostHire(player->GetLevel(), _botclass);
 
             int8 reason = 0;
             if (me->HasAura(BERSERK))
@@ -7922,6 +7975,8 @@ bool bot_ai::OnGossipHello(Player* player, uint32 /*option*/)
                 message1 << LocalizedNpcText(player, BOT_TEXT_HIREWARN_DEFAULT) << me->GetName() << '?';
                 message2 << LocalizedNpcText(player, BOT_TEXT_HIREOPTION_DEFAULT);
             }
+
+            message1 << "\n(" << BotMgr::GetNpcBotCostStr(player->GetLevel(), _botclass) << ")";
 
             if (!reason)
                 player->PlayerTalkClass->GetGossipMenu().AddMenuItem(-1, GOSSIP_ICON_TAXI, message2.str(), GOSSIP_SENDER_HIRE, GOSSIP_ACTION_INFO_DEF + 0, message1.str(), cost, false);
@@ -10718,9 +10773,9 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
             }
             else if (reason == -1)
             {
-                me->SetFaction(14);
+                me->SetFaction(FACTION_TEMPLATE_NEUTRAL_HOSTILE);
                 if (botPet)
-                    botPet->SetFaction(14);
+                    botPet->SetFaction(FACTION_TEMPLATE_NEUTRAL_HOSTILE);
                 BotYell(LocalizedNpcText(player, BOT_TEXT_DIE), player);
                 me->Attack(player, true);
                 break;
@@ -10807,9 +10862,9 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
             }
             //if (urand(1,100) <= 25)
             //{
-            //    me->SetFaction(14);
+            //    me->SetFaction(FACTION_TEMPLATE_HATES_EVERYTHING_1);
             //    if (Creature* pet = GetBotsPet())
-            //        pet->SetFaction(14);
+            //        pet->SetFaction(FACTION_TEMPLATE_HATES_EVERYTHING_1);
             //    BotSay("Fool...", player);
             //    me->Attack(player, true);
             //}
@@ -14963,7 +15018,7 @@ void bot_ai::InitFaction()
 {
     uint32 faction = _botData->faction;
 
-    //if (faction == 14)
+    //if (faction == FACTION_TEMPLATE_HATES_EVERYTHING_1)
     //    faction = 35;
 
     me->SetFaction(faction);
@@ -16335,6 +16390,9 @@ void bot_ai::OnDeath([[maybe_unused]] Unit* attacker/* = nullptr*/)
 
 void bot_ai::KilledUnit(Unit* u)
 {
+    if (u->GetOwnerGUID() == me->GetGUID() || u->GetGUID() == me->GetGUID())
+        return;
+
     ++_killsCount;
     if (u->IsControlledByPlayer() || u->IsPvP() || u->IsNPCBotOrPet())
     {
@@ -17915,6 +17973,26 @@ bool bot_ai::GlobalUpdate(uint32 diff)
     {
         _updateTimerEx2 = urand(2000, 4000);
 
+        //Rent Collecting
+        if (_rentTimer >= RENT_COLLECT_TIMER && BotMgr::GetNpcBotCostRent() && !HasBotCommandState(BOT_COMMAND_UNBIND) && !IAmFree())
+        {
+            uint32 rent_money = 0;
+            while (_rentTimer >= RENT_COLLECT_TIMER)
+            {
+                rent_money += uint32(uint64(BotMgr::GetNpcBotCostRent()) * (RENT_COLLECT_TIMER / 1000) / (RENT_TIMER / 1000));
+                _rentTimer -= RENT_COLLECT_TIMER;
+            }
+
+            rent_money = std::max<uint32>(rent_money, 1);
+            if (!master->HasEnoughMoney(rent_money))
+            {
+                master->GetSession()->SendNotification("%s", LocalizedNpcText(master, BOT_TEXT_HIREFAIL_COST).c_str());
+                master->GetBotMgr()->RemoveBot(me->GetGUID(), BOT_REMOVE_UNAFFORD);
+                return false;
+            }
+            master->ModifyMoney(-int32(rent_money));
+        }
+
         if (BotMgr::HideBotSpawns() && IAmFree() && !IsWanderer())
         {
             // !!bot may be out of world!!
@@ -18508,7 +18586,7 @@ bool bot_ai::GlobalUpdate(uint32 diff)
         return false;
 
     //opponent unsafe
-    if ((IsWanderer() || (!IAmFree() && (!opponent || !master->GetBotMgr()->GetBotAllowCombatPositioning()))) &&
+    if ((IsWanderer() || (!IAmFree() && (!_lastTargetGuid || !master->GetBotMgr()->GetBotAllowCombatPositioning()))) &&
         !HasBotCommandState(BOT_COMMAND_STAY) &&
         (!me->GetVehicle() || (!CCed(me->GetVehicleBase(), true) && !me->GetVehicleBase()->GetTarget())))
     {
@@ -18670,6 +18748,11 @@ void bot_ai::CommonTimers(uint32 diff)
 
     if (IAmFree())
         UpdateReviveTimer(diff);
+    else
+    {
+        if (BotMgr::GetNpcBotCostRent() && me->IsInWorld() && !HasBotCommandState(BOT_COMMAND_UNBIND))
+            _rentTimer += diff;
+    }
 
     // Ornfelt: stucktimer
     if (IsWanderer()) {
@@ -19321,6 +19404,11 @@ WanderNode const* bot_ai::GetNextWanderNode(Position const* fromPos, uint8 lvl, 
     };
 
     uint32 faction = me->GetFaction();
+    if (me->IsFFAPvP())
+    {
+        ChrRacesEntry const* rentry = sChrRacesStore.LookupEntry(me->GetRace());
+        faction = (_botclass >= BOT_CLASS_EX_START) ? uint32(FACTION_TEMPLATE_NEUTRAL_HOSTILE) : rentry ? rentry->FactionID : uint32(FACTION_TEMPLATE_NEUTRAL_HOSTILE);
+    }
 
     //Node got deleted (or forced)! Select close point and go from there
     NodeList nlinks;
