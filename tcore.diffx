@@ -1,4 +1,4 @@
-diff --git a/.gitignore b/.gitignore
+﻿diff --git a/.gitignore b/.gitignore
 index 8f53d915b4..5533ce5e80 100644
 --- a/.gitignore
 +++ b/.gitignore
