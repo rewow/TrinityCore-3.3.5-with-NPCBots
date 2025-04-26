@@ -6319,10 +6319,10 @@ index a0841d0752..3735539fd5 100644
          }
  
 diff --git a/src/server/game/AI/NpcBots/bot_ai.cpp b/src/server/game/AI/NpcBots/bot_ai.cpp
-index 96241ed805..adde94b5be 100644
+index b4bd03b6ec..e50c474629 100644
 --- a/src/server/game/AI/NpcBots/bot_ai.cpp
 +++ b/src/server/game/AI/NpcBots/bot_ai.cpp
-@@ -597,6 +597,9 @@ void bot_ai::ResetBotAI(uint8 resetType)
+@@ -598,6 +598,9 @@ void bot_ai::ResetBotAI(uint8 resetType)
      _botCommandState = 0;
      _botAwaitState = BOT_AWAIT_NONE;
      _reviveTimer = 0;
@@ -6332,7 +6332,7 @@ index 96241ed805..adde94b5be 100644
  
      if (resetType & BOTAI_RESET_MASK_RESET_MASTER)
          master = reinterpret_cast<Player*>(me);
-@@ -2338,7 +2341,8 @@ void bot_ai::SetStats(bool force)
+@@ -2339,7 +2342,8 @@ void bot_ai::SetStats(bool force)
              if (me->GetMap()->IsBattlegroundOrArena())
                  BOT_LOG_DEBUG("npcbots", "BG bot {} id {} selected level {}...", me->GetName(), me->GetEntry(), uint32(_baseLevel));
              else
@@ -6342,7 +6342,7 @@ index 96241ed805..adde94b5be 100644
          }
          else if (me->GetMap()->GetEntry()->IsContinent())
          {
-@@ -3832,6 +3836,10 @@ bool bot_ai::CanBotAttack(Unit const* target, int8 byspell, bool secondary) cons
+@@ -3833,6 +3837,10 @@ bool bot_ai::CanBotAttack(Unit const* target, int8 byspell, bool secondary) cons
              case 4952: case 17578: case 24792: case 30527: case 31143: case 31144: case 31146: // training dummy
              case 32541: case 32542: case 32543: case 32545: case 32546: case 32547: case 32666: case 32667: // training dummy
              case 7668: case 7669: case 7670: case 7671: // Blasted Lands servants
@@ -6353,7 +6353,7 @@ index 96241ed805..adde94b5be 100644
                  return false;
              case 21416: case 21709: case 21710: case 21711: // Shadowmoon Valley Broken element corruptors
                  if (target->HasAuraTypeWithMiscvalue(SPELL_AURA_SCHOOL_IMMUNITY, 127))
-@@ -16324,7 +16332,8 @@ void bot_ai::JustDied(Unit* u)
+@@ -16325,7 +16333,8 @@ void bot_ai::JustDied(Unit* u)
  
      if (IsWanderer() && me->GetMap()->IsBattlegroundOrArena())
      {
@@ -6363,7 +6363,7 @@ index 96241ed805..adde94b5be 100644
          {
              TeamId my_team = BotDataMgr::GetTeamIdForFaction(me->GetFaction());
              if (WorldSafeLocsEntry const* gy = bg->GetClosestGraveyardForBot(*me, my_team == TEAM_HORDE ? HORDE : ALLIANCE))
-@@ -16332,11 +16341,15 @@ void bot_ai::JustDied(Unit* u)
+@@ -16333,11 +16342,15 @@ void bot_ai::JustDied(Unit* u)
                  Position pos(gy->Loc.X, gy->Loc.Y, gy->Loc.Z, me->GetOrientation());
                  Events.AddEventAtOffset([me = me, pos = pos]() { BotMgr::TeleportBot(me, me->GetMap(), &pos, true); }, 5s);
              }
@@ -6380,7 +6380,7 @@ index 96241ed805..adde94b5be 100644
              IsWanderer() ? "Wandering bot" : "Bot", me->GetName(), me->GetEntry(), uint32(_botclass), uint32(me->GetLevel()),
              (u->IsPlayer() ? "player" : u->IsNPCBot() ? u->ToCreature()->GetBotAI()->IsWanderer() ? "wandering bot" : "bot" : u->IsNPCBotPet() ? "botpet" : "creature"),
              u->GetName(), u->GetEntry(), uint32(u->GetClass()), uint32(u->GetLevel()),
-@@ -16389,7 +16402,8 @@ void bot_ai::KilledUnit(Unit* u)
+@@ -16390,7 +16403,8 @@ void bot_ai::KilledUnit(Unit* u)
          {
              if (IsWanderer())
              {
@@ -6390,7 +6390,7 @@ index 96241ed805..adde94b5be 100644
                      me->GetName(), me->GetEntry(), uint32(_botclass), uint32(me->GetLevel()),
                      (u->IsPlayer() ? "player" : u->IsNPCBot() ? u->ToCreature()->GetBotAI()->IsWanderer() ? "wandering bot" : "bot" : u->IsNPCBotPet() ? "botpet" : "creature"),
                      u->GetName(), u->GetEntry(), uint32(u->GetClass()), uint32(u->GetLevel()),
-@@ -16397,7 +16411,8 @@ void bot_ai::KilledUnit(Unit* u)
+@@ -16398,7 +16412,8 @@ void bot_ai::KilledUnit(Unit* u)
              }
              else if (u->IsNPCBot() && u->ToCreature()->GetBotAI()->IsWanderer())
              {
@@ -6400,7 +6400,7 @@ index 96241ed805..adde94b5be 100644
                      me->GetName(), me->GetEntry(), uint32(_botclass), uint32(me->GetLevel()),
                      u->GetName(), u->GetEntry(), uint32(u->GetClass()), uint32(u->GetLevel()),
                      IsWanderer() ? _travel_node_cur->GetName() : "''");
-@@ -16406,7 +16421,9 @@ void bot_ai::KilledUnit(Unit* u)
+@@ -16407,7 +16422,9 @@ void bot_ai::KilledUnit(Unit* u)
      }
  
      //handle BG kill BvP, BvB, BvC
@@ -6411,7 +6411,7 @@ index 96241ed805..adde94b5be 100644
      {
          Battleground* bg = GetBG();
          //could be removed from BG
-@@ -18748,6 +18765,26 @@ void bot_ai::CommonTimers(uint32 diff)
+@@ -18749,6 +18766,26 @@ void bot_ai::CommonTimers(uint32 diff)
              _rentTimer += diff;
      }
  
@@ -6438,7 +6438,7 @@ index 96241ed805..adde94b5be 100644
      if (me->IsInWorld())
      {
          if (_wmoAreaUpdateTimer > diff) _wmoAreaUpdateTimer -= diff;
-@@ -18782,7 +18819,9 @@ void bot_ai::CommonTimers(uint32 diff)
+@@ -18783,7 +18820,9 @@ void bot_ai::CommonTimers(uint32 diff)
  
  void bot_ai::UpdateReviveTimer(uint32 diff)
  {
@@ -6449,7 +6449,7 @@ index 96241ed805..adde94b5be 100644
          return;
  
      if (_reviveTimer > diff)        _reviveTimer -= diff;
-@@ -18870,12 +18909,29 @@ void bot_ai::Evade()
+@@ -18871,12 +18910,29 @@ void bot_ai::Evade()
  
      if (IsWanderer())
      {
@@ -6483,7 +6483,7 @@ index 96241ed805..adde94b5be 100644
  
              evadeDelayTimer = 12000;
              me->CastSpell(me, WANDERER_HEARTHSTONE);
-@@ -18955,6 +19011,21 @@ void bot_ai::Evade()
+@@ -18956,6 +19012,21 @@ void bot_ai::Evade()
                  OnWanderNodeReached();
  
                  WanderNode const* nextNode = GetNextTravelNode(&pos, false);
@@ -6505,7 +6505,7 @@ index 96241ed805..adde94b5be 100644
                  if (!nextNode)
                  {
                      BOT_LOG_FATAL("npcbots", "Bot {} ({}) is unable to get next travel node! cur {}, last {}, position: {}. BOT WAS DISABLED",
-@@ -20607,6 +20678,16 @@ void bot_ai::OnBotEnterBattleground()
+@@ -20608,6 +20679,16 @@ void bot_ai::OnBotEnterBattleground()
              }
          });
  
@@ -6658,7 +6658,7 @@ index 61c6618336..550b584c0e 100644
              BotBattlegroundEnterEvent* bbe = new BotBattlegroundEnterEvent(groupLeader->GetGUID(), bot->GetGUID(), bgqTypeId,
                  botBGJoinEvents[groupLeader->GetGUID()].CalculateTime(Milliseconds(uint32(INVITE_ACCEPT_WAIT_TIME) + uint32(BG_START_DELAY_2M))).count());
 diff --git a/src/server/game/AI/NpcBots/botmgr.cpp b/src/server/game/AI/NpcBots/botmgr.cpp
-index c3b7cbd471..68323f6d45 100644
+index d23e64de0c..ccce2abbf0 100644
 --- a/src/server/game/AI/NpcBots/botmgr.cpp
 +++ b/src/server/game/AI/NpcBots/botmgr.cpp
 @@ -1695,7 +1695,9 @@ void BotMgr::_teleportBot(Creature* bot, Map* newMap, float x, float y, float z,
