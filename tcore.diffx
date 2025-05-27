@@ -6844,10 +6844,10 @@ index 1800a78ae0..c3f233a10e 100644
          m_TeamScores[teamId] = BG_AB_MAX_TEAM_SCORE;
      UpdateWorldState(teamId == TEAM_ALLIANCE ? BG_AB_OP_RESOURCES_ALLY : BG_AB_OP_RESOURCES_HORDE, m_TeamScores[teamId]);
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index 6d773d3623..e7199597a6 100644
+index c7f763b697..1bd0ce647e 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
-@@ -1365,6 +1365,11 @@ void Player::setDeathState(DeathState s)
+@@ -1367,6 +1367,11 @@ void Player::setDeathState(DeathState s)
      if (IsAlive() && !cur)
          //clear aura case after resurrection by another way (spells will be applied before next death)
          SetUInt32Value(PLAYER_SELF_RES_SPELL, 0);
@@ -6907,7 +6907,7 @@ index 34e95077be..6e624f82f3 100644
              if (itemTemplate.Sheath != dbcitem->SheatheType)
              {
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
-index 5e1b5494cc..3cb4558ac4 100644
+index 66708484cb..64c44f543d 100644
 --- a/src/server/game/Spells/Spell.cpp
 +++ b/src/server/game/Spells/Spell.cpp
 @@ -3238,7 +3238,11 @@ SpellCastResult Spell::prepare(SpellCastTargets const& targets, AuraEffect const
