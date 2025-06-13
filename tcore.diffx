@@ -1,4 +1,4 @@
-﻿diff --git a/.gitignore b/.gitignore
+diff --git a/.gitignore b/.gitignore
 index 8f53d915b4..5533ce5e80 100644
 --- a/.gitignore
 +++ b/.gitignore
@@ -6844,7 +6844,7 @@ index 1800a78ae0..c3f233a10e 100644
          m_TeamScores[teamId] = BG_AB_MAX_TEAM_SCORE;
      UpdateWorldState(teamId == TEAM_ALLIANCE ? BG_AB_OP_RESOURCES_ALLY : BG_AB_OP_RESOURCES_HORDE, m_TeamScores[teamId]);
 diff --git a/src/server/game/Entities/Player/Player.cpp b/src/server/game/Entities/Player/Player.cpp
-index c7f763b697..1bd0ce647e 100644
+index 96b811a53f..2e95ae8abb 100644
 --- a/src/server/game/Entities/Player/Player.cpp
 +++ b/src/server/game/Entities/Player/Player.cpp
 @@ -1367,6 +1367,11 @@ void Player::setDeathState(DeathState s)
