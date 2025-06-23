@@ -1040,7 +1040,8 @@ void Map::RemoveFromMap(T *obj, bool remove)
     if (!inWorld) // if was in world, RemoveFromWorld() called DestroyForNearbyPlayers()
         obj->DestroyForNearbyPlayers(); // previous obj->UpdateObjectVisibility(true)
 
-    obj->RemoveFromGrid();
+    if (obj->IsInGrid())
+        obj->RemoveFromGrid();
 
     obj->ResetMap();
 
