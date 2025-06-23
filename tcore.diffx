@@ -6860,7 +6860,7 @@ index 96b811a53f..2e95ae8abb 100644
  
  bool Player::BuildEnumData(PreparedQueryResult result, WorldPacket* data)
 diff --git a/src/server/game/Entities/Unit/Unit.cpp b/src/server/game/Entities/Unit/Unit.cpp
-index 8c14f3aa52..401f7b809a 100644
+index 2e3f97b057..6aa7962ab2 100644
 --- a/src/server/game/Entities/Unit/Unit.cpp
 +++ b/src/server/game/Entities/Unit/Unit.cpp
 @@ -1197,6 +1197,23 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
@@ -6906,6 +6906,20 @@ index 34e95077be..6e624f82f3 100644
              }
              if (itemTemplate.Sheath != dbcitem->SheatheType)
              {
+diff --git a/src/server/game/Maps/Map.cpp b/src/server/game/Maps/Map.cpp
+index 806e1089e7..ce210820b0 100644
+--- a/src/server/game/Maps/Map.cpp
++++ b/src/server/game/Maps/Map.cpp
+@@ -1040,7 +1040,8 @@ void Map::RemoveFromMap(T *obj, bool remove)
+     if (!inWorld) // if was in world, RemoveFromWorld() called DestroyForNearbyPlayers()
+         obj->DestroyForNearbyPlayers(); // previous obj->UpdateObjectVisibility(true)
+ 
+-    obj->RemoveFromGrid();
++    if (obj->IsInGrid())
++        obj->RemoveFromGrid();
+ 
+     obj->ResetMap();
+ 
 diff --git a/src/server/game/Spells/Spell.cpp b/src/server/game/Spells/Spell.cpp
 index 66708484cb..64c44f543d 100644
 --- a/src/server/game/Spells/Spell.cpp
