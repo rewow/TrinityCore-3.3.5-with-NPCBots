@@ -1796,6 +1796,7 @@ bool BotDataMgr::GenerateBattlegroundBots(Player const* groupLeader, [[maybe_unu
     // Ornfelt: Fix amount of bots in arena skirmish
     if (bgTypeId == 6)
     {
+        maxteamplayers = groupLeader->m_arenaType;
         needed_bots_count_a = maxteamplayers - queued_players_a;
         needed_bots_count_h = maxteamplayers - queued_players_h;
     }
