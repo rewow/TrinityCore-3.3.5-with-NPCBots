@@ -1734,7 +1734,7 @@ void BotMgr::_teleportBot(Creature* bot, Map* newMap, float x, float y, float z,
                             }
                         }
                     }
-                    if (shGuid)
+                    if (!shGuid.IsEmpty())
                         bg->AddPlayerToResurrectQueue(shGuid, bot->GetGUID());
                     else
                     {
@@ -2536,7 +2536,7 @@ void BotMgr::BuildBotPartyMemberStatsPacket(ObjectGuid bot_guid, WorldPacket* da
     data->put<uint64>(maskPos, auraMask);                    // GROUP_UPDATE_FLAG_AURAS
 
     if (updateFlags & GROUP_UPDATE_FLAG_PET_GUID)
-        *data << uint64(ASSERT_NOTNULL(pet)->GetGUID());
+        *data << ASSERT_NOTNULL(pet)->GetGUID();
 
     *data << std::string(pet ? pet->GetName() : "");         // GROUP_UPDATE_FLAG_PET_NAME
     *data << uint16(pet ? pet->GetDisplayId() : 0);          // GROUP_UPDATE_FLAG_PET_MODEL_ID
@@ -2662,9 +2662,9 @@ void BotMgr::BuildBotPartyMemberStatsChangedPacket(Creature const* bot, WorldPac
     if (mask & GROUP_UPDATE_FLAG_PET_GUID)
     {
         if (pet)
-            *data << (uint64) pet->GetGUID();
+            *data << pet->GetGUID();
         else
-            *data << (uint64) 0;
+            *data << ObjectGuid::Empty;
     }
 
     if (mask & GROUP_UPDATE_FLAG_PET_NAME)
