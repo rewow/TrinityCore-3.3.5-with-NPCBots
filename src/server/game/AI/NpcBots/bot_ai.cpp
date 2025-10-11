@@ -59,6 +59,10 @@ Notes:
 Methods may have null arg1 (Unit*):
 DamageTaken(Unit*, ), JustDied(Unit*, ), OwnerAttackedBy(Unit*, ), HealReceived(Unit*, )
 Possibly others
+Performance impact factors:
+ - Containers for selection
+ - GetDistance() instead of IsWithinDist() (extra sqrt)
+ - std::ostringstream::str() instead of std::ostringstream::view()
 */
 
 #ifdef _MSC_VER
@@ -480,7 +484,7 @@ void bot_ai::CheckOwnerExpiry()
     if (_botData->owner == 0)
         return;
 
-    ObjectGuid ownerGuid = ObjectGuid(HighGuid::Player, 0, _botData->owner);
+    ObjectGuid ownerGuid = ObjectGuid::Create<HighGuid::Player>(_botData->owner);
     time_t timeNow = time(0);
     time_t expireTime = time_t(BotMgr::GetOwnershipExpireTime());
     time_t baseTimeStamp;
@@ -536,7 +540,10 @@ void bot_ai::CheckOwnerExpiry()
                     }
                 }
                 if (item_idx >= BOT_INVENTORY_SIZE)
+                {
                     BOT_LOG_ERROR("npcbots", "bot_ai::CheckOwnerExpiry(): item id {} guid {} not found in bot's inventory!\n{}", itemId, itemGuidLow, me->GetGUID().ToString());
+                    continue;
+                }
 
                 items.push_back(_equips[item_idx]);
                 _removeEquipment(item_idx);
@@ -585,7 +592,7 @@ void bot_ai::CheckOwnerExpiry()
 
 void bot_ai::InitUnitFlags()
 {
-    if (BotMgr::DisplayEquipment() == true && CanDisplayNonWeaponEquipmentChanges())
+    if (BotMgr::DisplayEquipment() && CanDisplayNonWeaponEquipmentChanges())
     {
         (const_cast<CreatureTemplate*>(me->GetCreatureTemplate()))->unit_flags2 |= UNIT_FLAG2_MIRROR_IMAGE;
         me->ReplaceAllUnitFlags2(UnitFlags2(me->GetCreatureTemplate()->unit_flags2));
@@ -1258,7 +1265,7 @@ void bot_ai::SetBotCommandState(uint32 st, bool force, Position* newpos, float* 
             return;
     }
 
-    Vehicle* veh = me->GetVehicle();
+    Vehicle const* veh = me->GetVehicle();
     VehicleSeatEntry const* seat = veh ? veh->GetSeatForPassenger(me) : nullptr;
     bool canControl = seat ? (seat->Flags & VEHICLE_SEAT_FLAG_CAN_CONTROL) : false;
     Unit* mover = canControl ? veh->GetBase() : !veh ? me : nullptr;
@@ -1817,7 +1824,7 @@ void bot_ai::CureGroup(uint32 cureSpell, uint32 diff)
 {
     if (!cureSpell) return;
     if (GC_Timer > diff) return;
-    if (me->IsMounted())
+    if (me->IsMounted()) return;
     if (IsTank() && me->GetVictim() && me->GetMap()->IsRaid()) return;
     if (IsCasting()) return;
 
@@ -4069,7 +4076,7 @@ std::tuple<Unit*, Unit*> bot_ai::_getTargets(bool byspell, bool ranged, bool &re
     {
         if (_orders.front()._type == BOT_ORDER_PULL)
         {
-            ObjectGuid orderTargetGuid = ObjectGuid(_orders.front().params.pullParams.targetGuid);
+            ObjectGuid orderTargetGuid = _orders.front().params.pullParams.targetGuid;
             if (Unit* orderTarget = mytar && mytar->GetGUID() == orderTargetGuid ? mytar : ObjectAccessor::GetUnit(*me, orderTargetGuid))
             {
                 if (CanBotAttack(orderTarget))
@@ -10791,7 +10798,7 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                         std::ostringstream ostr;
                         std::string name;
                         ostr << LocalizedNpcText(player, BOT_TEXT_HIREDENY_MY_MASTER_IS_);
-                        if (sCharacterCache->GetCharacterNameByGuid(ObjectGuid(HighGuid::Player, _ownerGuid), name))
+                        if (sCharacterCache->GetCharacterNameByGuid(ObjectGuid::Create<HighGuid::Player>(_ownerGuid), name))
                             ostr << name;
                         else
                             ostr << LocalizedNpcText(player, BOT_TEXT_UNKNOWN) + " (" << _ownerGuid << ')';
@@ -11385,7 +11392,7 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                 << ", spec: " << uint32(_spec) << '(' << LocalizedNpcText(player, TextForSpec(_spec)) << ')'
                 << ", faction: " << me->GetFaction()
                 << "). owner: ";
-            if (_ownerGuid && sCharacterCache->GetCharacterNameByGuid(ObjectGuid(HighGuid::Player, _ownerGuid), name))
+            if (_ownerGuid && sCharacterCache->GetCharacterNameByGuid(ObjectGuid::Create<HighGuid::Player>(_ownerGuid), name))
                 ostr << name << " (" << _ownerGuid << ')';
             else
                 ostr << "none";
@@ -16983,8 +16990,8 @@ void bot_ai::_ProcessOrders()
 
             SetBotCommandState(BOT_COMMAND_ISSUED_ORDER);
 
-            if (order.params.pullParams.targetGuid)
-                target = ObjectAccessor::GetUnit(*me, ObjectGuid(order.params.pullParams.targetGuid));
+            if (!order.params.pullParams.targetGuid.IsEmpty())
+                target = ObjectAccessor::GetUnit(*me, order.params.pullParams.targetGuid);
             else
             {
                 BOT_LOG_ERROR("scripts", "bot_ai:_ProcessOrders: invalid pullParams.targetGuid {}!", order.params.pullParams.targetGuid);
@@ -17026,7 +17033,7 @@ bool bot_ai::IsLastOrder(BotOrderTypes order_type, uint32 param1, ObjectGuid gui
                         return true;
                     break;
                 case BOT_ORDER_PULL:
-                    if (!guidparam1 || order.params.pullParams.targetGuid == guidparam1.GetRawValue())
+                    if (!guidparam1 || order.params.pullParams.targetGuid == guidparam1)
                         return true;
                     break;
                 default:
