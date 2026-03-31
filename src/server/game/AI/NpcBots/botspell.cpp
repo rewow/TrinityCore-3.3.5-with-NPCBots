@@ -8,8 +8,8 @@
 
 #include <unordered_map>
 
-typedef std::unordered_map<uint32, SpellInfo> SpellInfoOverridesMap;
-typedef std::unordered_map<uint32, SpellProcEntry> SpellProcOverridesMap;
+using SpellInfoOverridesMap = std::unordered_map<uint32, SpellInfo>;
+using SpellProcOverridesMap = std::unordered_map<uint32, SpellProcEntry>;
 static SpellInfoOverridesMap botSpellInfoOverrides;
 static SpellProcOverridesMap botSpellProcOverrides;
 
@@ -108,7 +108,7 @@ void GenerateBotCustomSpellProcs()
             if (!isTriggerAura[auraName])
             {
                 // explicitly disable non proccing auras to avoid losing charges on self proc
-                nonProcMask |= 1 << spellEffectInfo.EffectIndex;
+                nonProcMask |= 1u << spellEffectInfo.EffectIndex;
                 continue;
             }
 

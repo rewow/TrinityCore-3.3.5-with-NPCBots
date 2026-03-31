@@ -32,6 +32,7 @@
 #include "WorldPacket.h"
 
 //npcbot
+#include "botconfig.h"
 #include "botmgr.h"
 //end npcbot
 
@@ -170,7 +171,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recvData*/)
     {
         loot->NotifyMoneyRemoved();
         //npcbot
-        if (shareMoney && player->GetGroup() && BotMgr::GetNpcBotMoneyShareEnabled())
+        if (shareMoney && player->GetGroup() && BotCfg::GetNpcBotMoneyShareEnabled())
         {
             Group* group = player->GetGroup();
             std::vector<Player*> playersNear;
@@ -191,7 +192,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recvData*/)
                 for (auto const& kv : *botMap)
                 {
                     Creature const* bot = kv.second;
-                    if (bot && bot->IsAlive() && bot->IsInMap(player) && (group->IsMember(kv.first) || !BotMgr::GetNpcBotMoneyShareGroupOnly()) &&
+                    if (bot && bot->IsAlive() && bot->IsInMap(player) && (group->IsMember(kv.first) || !BotCfg::GetNpcBotMoneyShareGroupOnly()) &&
                         (member->GetMap()->IsDungeon() || player->GetDistance(bot) <= sWorld->getFloatConfig(CONFIG_GROUP_XP_DISTANCE)))
                         ++bots_count;
                 }
@@ -330,12 +331,18 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
         else if (loot->isLooted() || go->GetGoType() == GAMEOBJECT_TYPE_FISHINGNODE)
         {
             if (go->GetGoType() == GAMEOBJECT_TYPE_FISHINGHOLE)
-            {                                               // The fishing hole used once more
-                go->AddUse();                               // if the max usage is reached, will be despawned in next tick
-                if (go->GetUseCount() >= go->GetGOValue()->FishingHole.MaxOpens)
-                    go->SetLootState(GO_JUST_DEACTIVATED);
-                else
-                    go->SetLootState(GO_READY);
+            {
+                bool allOpensConsumed = false;
+                if (go->GetGOValue()->FishingHole.MaxOpens)
+                {
+                    // The fishing hole used once more
+                    go->AddUse();
+
+                    // If the max usage is reached, will be despawned in next tick
+                    allOpensConsumed = go->GetUseCount() >= go->GetGOValue()->FishingHole.MaxOpens;
+                }
+
+                go->SetLootState(allOpensConsumed ? GO_JUST_DEACTIVATED : GO_READY);
             }
             else
                 go->SetLootState(GO_JUST_DEACTIVATED);

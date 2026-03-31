@@ -109,8 +109,9 @@
 #include "WorldStatePackets.h"
 
 //npcbot
-#include "botmgr.h"
+#include "botconfig.h"
 #include "botdatamgr.h"
+#include "botmgr.h"
 //end npcbot
 
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
@@ -337,8 +338,6 @@ Player::Player(WorldSession* session): Unit(true)
 
     m_achievementMgr = new AchievementMgr(this);
     m_reputationMgr = new ReputationMgr(this);
-
-    m_groupUpdateTimer.Reset(5000);
 
     /////////////// NPCBot System //////////////////
     _botMgr = new BotMgr(this);
@@ -1231,14 +1230,6 @@ void Player::Update(uint32 p_time)
         }
     }
 
-    // group update
-    m_groupUpdateTimer.Update(p_time);
-    if (m_groupUpdateTimer.Passed())
-    {
-        SendUpdateToOutOfRangeGroupMembers();
-        m_groupUpdateTimer.Reset(5000);
-    }
-
     Pet* pet = GetPet();
     if (pet && !pet->IsWithinDistInMap(this, GetMap()->GetVisibilityRange()) && !pet->isPossessed())
     //if (pet && !pet->IsWithinDistInMap(this, GetMap()->GetVisibilityDistance()) && (GetCharmGUID() && (pet->GetGUID() != GetCharmGUID())))
@@ -1262,6 +1253,17 @@ void Player::Update(uint32 p_time)
     //NpcBot mod: Update
     _botMgr->Update(p_time);
     //end Npcbot
+}
+
+void Player::Heartbeat()
+{
+    Unit::Heartbeat();
+
+    // Group update
+    SendUpdateToOutOfRangeGroupMembers();
+
+    // Indoor/Outdoor aura requirements
+    CheckOutdoorsAuraRequirements();
 }
 
 void Player::setDeathState(DeathState s)
@@ -2398,7 +2400,7 @@ void Player::RemoveFromGroup(Group* group, ObjectGuid guid, RemoveMethod method 
     else if (guid.IsPlayer())
     {
         std::vector<ObjectGuid> botguids;
-        botguids.reserve(BotMgr::GetMaxNpcBots(DEFAULT_MAX_LEVEL) / 2 + 1);
+        botguids.reserve(BotCfg::GetMaxNpcBots(DEFAULT_MAX_LEVEL) / 2 + 1);
         BotDataMgr::GetNPCBotGuidsByOwner(botguids, guid, true);
         for (std::vector<ObjectGuid>::const_iterator ci = botguids.begin(); ci != botguids.end(); ++ci)
         {
@@ -6252,7 +6254,7 @@ bool Player::UpdatePosition(float x, float y, float z, float orientation, bool t
     if (GetGroup())
         SetGroupUpdateFlag(GROUP_UPDATE_FLAG_POSITION);
 
-    CheckAreaExploreAndOutdoor();
+    CheckAreaExplore();
 
     return true;
 }
@@ -6309,16 +6311,13 @@ void Player::SendMovieStart(uint32 movieId)
     SendDirectMessage(packet.Write());
 }
 
-void Player::CheckAreaExploreAndOutdoor()
+void Player::CheckAreaExplore()
 {
     if (!IsAlive())
         return;
 
     if (IsInFlight())
         return;
-
-    if (sWorld->getBoolConfig(CONFIG_VMAP_INDOOR_CHECK) && !IsOutdoors())
-        RemoveAurasWithAttribute(SPELL_ATTR0_OUTDOORS_ONLY);
 
     uint32 const areaId = GetAreaId();
     if (!areaId)
@@ -6389,6 +6388,12 @@ void Player::CheckAreaExploreAndOutdoor()
             TC_LOG_DEBUG("entities.player", "Player '{}' ({}) discovered a new area: {}", GetName(),GetGUID().ToString(), areaId);
         }
     }
+}
+
+void Player::CheckOutdoorsAuraRequirements()
+{
+    if (sWorld->getBoolConfig(CONFIG_VMAP_INDOOR_CHECK))
+        RemoveAurasWithAttribute(IsOutdoors() ? SPELL_ATTR0_INDOORS_ONLY : SPELL_ATTR0_OUTDOORS_ONLY);
 }
 
 uint32 Player::TeamForRace(uint8 race)
@@ -6716,7 +6721,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
         {
             static const float WANDERING_BOT_HONOR_GAIN_MULT = 10.0f;
 
-            if (!BotMgr::IsBotHKEnabled())
+            if (!BotCfg::IsBotHKEnabled())
                 return false;
 
             Creature const* bot = victim->ToCreature();
@@ -6732,16 +6737,16 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
             if (v_level <= k_grey)
                 return false;
 
-            if (!BotMgr::IsBotHKMessageEnabled())
+            if (!BotCfg::IsBotHKMessageEnabled())
                 victim_guid.Clear(); // Don't show HK: <rank> message, only log.
 
             //TODO: honor gain rate
             honor_f = ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
-            honor_f *= BotMgr::GetBotHKHonorRate();
+            honor_f *= BotCfg::GetBotHKHonorRate();
             if (bot->IsWandererBot() && !bot->GetBotBG())
                 honor_f *= WANDERING_BOT_HONOR_GAIN_MULT;
 
-            if (BotMgr::IsBotHKAchievementsEnabled())
+            if (BotCfg::IsBotHKAchievementsEnabled())
             {
                 ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
                 ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
