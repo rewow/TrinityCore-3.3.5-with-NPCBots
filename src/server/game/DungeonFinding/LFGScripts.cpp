@@ -31,6 +31,13 @@
 #include "SharedDefines.h"
 #include "WorldSession.h"
 
+//npcbot
+#include "botconfig.h"
+#include "botdatamgr.h"
+#include "botmgr.h"
+#include "Creature.h"
+//end npcbot
+
 namespace lfg
 {
 
@@ -105,6 +112,12 @@ void LFGPlayerScript::OnMapChanged(Player* player)
                 player->GetSession()->SendNameQueryOpcode(member->GetGUID());
         //end npcbot
 
+        //npcbot
+        if (group->GetLeaderGUID() == player->GetGUID() && group->GetMembersCount() < MAX_GROUP_SIZE &&
+            BotCfg::IsNpcBotModEnabled() && BotCfg::IsNpcBotDungeonFinderBotGenerationEnabled())
+            BotDataMgr::GenerateDungeonBots(player, group, map);
+        //end npcbot
+
         if (sLFGMgr->selectedRandomLfgDungeon(player->GetGUID()))
             player->CastSpell(player, LFG_SPELL_LUCK_OF_THE_DRAW, true);
     }
@@ -121,6 +134,11 @@ void LFGPlayerScript::OnMapChanged(Player* player)
             TC_LOG_DEBUG("lfg", "LFGPlayerScript::OnMapChanged, Player {}({}) is last in the lfggroup so we disband the group.",
                 player->GetName(), player->GetGUID().ToString());
         }
+
+        //npcbot
+        player->GetBotMgr()->RemoveAllSummonedBots();
+        //end npcbot
+
         player->RemoveAurasDueToSpell(LFG_SPELL_LUCK_OF_THE_DRAW);
     }
 }

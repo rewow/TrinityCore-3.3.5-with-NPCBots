@@ -3,7 +3,7 @@
 #include "botdatamgr.h"
 #include "botlog.h"
 #include "Creature.h"
-#include "DatabaseEnvFwd.h"
+#include "DatabaseEnv.h"
 #include "Log.h"
 
 template<typename... Args>
@@ -47,6 +47,9 @@ inline static void BotLogImpl(uint16 log_type, Creature const* bot, int32 owner,
 void BotLogger::Log(uint16 log_type, Creature const* bot, NPCBots::LoggableArguments auto&&... params)
 {
     if (!BotCfg::IsNpcBotLogEnabled())
+        return;
+
+    if (bot->IsSummon() && !((1ull<<(log_type-1)) & NPCBOT_LOG_MASK_DUNGEON_BOT))
         return;
 
     BotLogImpl(log_type, bot, int32(bot->GetBotAI() ? bot->GetBotAI()->GetBotOwnerGuid() : -1), std::forward<decltype(params)>(params)...);

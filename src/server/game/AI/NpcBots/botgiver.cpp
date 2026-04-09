@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "ScriptedGossip.h"
 #include "ScriptMgr.h"
+#include "WorldSession.h"
 /*
 NPCbot giver NPC by Trickerer (<https://github.com/Trickerer/> <onlysuffering@gmail.com>)
 Complete - 100%
@@ -103,7 +104,7 @@ public:
                         std::shared_lock lock(*BotDataMgr::GetLock());
                         for (Creature const* bot : BotDataMgr::GetExistingNPCBots())
                         {
-                            if (!bot->IsAlive() || bot->IsTempBot() || bot->IsWandererBot() || bot->GetBotAI()->GetBotOwnerGuid() || bot->HasAura(BERSERK))
+                            if (!bot->IsAlive() || bot->IsTempBot() || bot->IsSummon() || bot->IsWandererBot() || bot->GetBotAI()->GetBotOwnerGuid() || bot->HasAura(BERSERK))
                                 continue;
                             if (BotCfg::FilterRaces() && bot->GetBotClass() < BOT_CLASS_EX_START && (bot->GetRaceMask() & RACEMASK_ALL_PLAYABLE) &&
                                 !(bot->GetRaceMask() & ((player->GetRaceMask() & RACEMASK_ALLIANCE) ? RACEMASK_ALLIANCE : RACEMASK_HORDE)))
@@ -194,7 +195,7 @@ public:
                         for (Creature const* bot : BotDataMgr::GetExistingNPCBots())
                         {
                             bot_ai const* ai = bot->GetBotAI();
-                            if (bot->GetBotClass() != botclass || !bot->IsAlive() || ai->IsTempBot() || bot->IsWandererBot() || ai->GetBotOwnerGuid() || bot->HasAura(BERSERK))
+                            if (bot->GetBotClass() != botclass || !bot->IsAlive() || ai->IsTempBot() || bot->IsWandererBot() || bot->IsSummon() || ai->GetBotOwnerGuid() || bot->HasAura(BERSERK))
                                 continue;
                             if (BotCfg::FilterRaces() && botclass < BOT_CLASS_EX_START && (bot->GetRaceMask() & RACEMASK_ALL_PLAYABLE) &&
                                 !(bot->GetRaceMask() & ((player->GetRaceMask() & RACEMASK_ALLIANCE) ? RACEMASK_ALLIANCE : RACEMASK_HORDE)))

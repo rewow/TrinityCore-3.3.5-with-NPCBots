@@ -60,6 +60,10 @@ static constexpr size_t SOUND_SETS_COUNT = 3;
 static constexpr size_t GENDERS_COUNT = 2;
 static constexpr size_t RACES_COUNT = 10;
 
+#ifndef MAX_RACES
+ #define MAX_RACES 12
+#endif // !MAX_RACES
+
 // model ids with different sound sets tied to them
 enum SoundSetModels : uint32
 {
@@ -153,7 +157,7 @@ static constexpr uint32 SoundSetModelsArray[RACES_COUNT][GENDERS_COUNT][SOUND_SE
     {{SOUNDSETMODEL_BLOODELF_MALE_1, SOUNDSETMODEL_BLOODELF_MALE_2, SOUNDSETMODEL_BLOODELF_MALE_3}, {SOUNDSETMODEL_BLOODELF_FEMALE_1, SOUNDSETMODEL_BLOODELF_FEMALE_2, SOUNDSETMODEL_BLOODELF_FEMALE_3}}
 };
 
-enum class PlayerVisuals : size_t
+enum class PlayerVisuals
 {
     Skins,
     Faces,
@@ -189,26 +193,26 @@ static consteval uint8 GetMaxVisual()
 
 #if !defined(PLAYER_VIS_ARRS) && !defined(PLAYER_VIS_ARR)
 #define PLAYER_VIS_ARR(r,g) \
-    GetMaxVisual<PlayerVisuals::Skins, Races(r), g>(), \
-    GetMaxVisual<PlayerVisuals::Faces, Races(r), g>(), \
-    GetMaxVisual<PlayerVisuals::HairStyles, Races(r), g>(), \
-    GetMaxVisual<PlayerVisuals::HairColors, Races(r), g>(), \
-    GetMaxVisual<PlayerVisuals::Features, Races(r), g>()
+    { GetMaxVisual<PlayerVisuals::Skins, r, g>(), \
+    GetMaxVisual<PlayerVisuals::Faces, r, g>(), \
+    GetMaxVisual<PlayerVisuals::HairStyles, r, g>(), \
+    GetMaxVisual<PlayerVisuals::HairColors, r, g>(), \
+    GetMaxVisual<PlayerVisuals::Features, r, g>() }
 
-#define PLAYER_VIS_ARRS(r) PLAYER_VIS_ARR(r, GENDER_MALE), PLAYER_VIS_ARR(r, GENDER_FEMALE)
+#define PLAYER_VIS_ARRS(r) { PLAYER_VIS_ARR(r, GENDER_MALE), PLAYER_VIS_ARR(r, GENDER_FEMALE) }
 static constinit const uint8 MAX_PLAYER_VISUALS[MAX_RACES][GENDERS_COUNT][5] {
-    PLAYER_VIS_ARRS(0),
-    PLAYER_VIS_ARRS(1),
-    PLAYER_VIS_ARRS(2),
-    PLAYER_VIS_ARRS(3),
-    PLAYER_VIS_ARRS(4),
-    PLAYER_VIS_ARRS(5),
-    PLAYER_VIS_ARRS(6),
-    PLAYER_VIS_ARRS(7),
-    PLAYER_VIS_ARRS(8),
-    PLAYER_VIS_ARRS(9),
-    PLAYER_VIS_ARRS(10),
-    PLAYER_VIS_ARRS(11)
+    PLAYER_VIS_ARRS(RACE_NONE),
+    PLAYER_VIS_ARRS(RACE_HUMAN),
+    PLAYER_VIS_ARRS(RACE_ORC),
+    PLAYER_VIS_ARRS(RACE_DWARF),
+    PLAYER_VIS_ARRS(RACE_NIGHTELF),
+    PLAYER_VIS_ARRS(RACE_UNDEAD_PLAYER),
+    PLAYER_VIS_ARRS(RACE_TAUREN),
+    PLAYER_VIS_ARRS(RACE_GNOME),
+    PLAYER_VIS_ARRS(RACE_TROLL),
+    PLAYER_VIS_ARRS(RACE_NONE),
+    PLAYER_VIS_ARRS(RACE_BLOODELF),
+    PLAYER_VIS_ARRS(RACE_DRAENEI)
 };
 #undef PLAYER_VIS_ARR
 #undef PLAYER_VIS_ARRS
@@ -274,7 +278,7 @@ inline static uint32 GetMaxPlayerVisual(Races race, Gender gender, PlayerVisuals
 static bool IsValidVisual(uint8 race, uint8 gender, uint8 skin, uint8 face, uint8 hairs, uint8 hairc, uint8 features)
 {
     return (
-        race < RACES_COUNT &&
+        race < MAX_RACES &&
         gender < GENDERS_COUNT &&
         skin <= GetMaxPlayerVisual(Races(race), Gender(gender), PlayerVisuals::Skins) &&
         face <= GetMaxPlayerVisual(Races(race), Gender(gender), PlayerVisuals::Faces) &&
@@ -2162,17 +2166,17 @@ public:
             return true;
         }
 
-        bot_ai::BotOrder order(BOT_ORDER_PULL);
-        order.params.pullParams.targetGuid = target_guid;
+        bot_ai::BotAction order(BotActionTypes::BOT_ACTION_PULL);
+        order.params.pull_params.target_guid = target_guid;
 
-        if (bot->GetBotAI()->AddOrder(std::move(order)))
+        if (bot->GetBotAI()->EnqueueAction(std::move(order), true))
         {
-            if (DEBUG_BOT_ORDERS)
+            if constexpr (DEBUG_BOT_ACTIONS)
                 handler->PSendSysMessage("Order given: %s: pull %s", bot->GetName(), target ? target->GetName().c_str() : "unknown");
         }
         else
         {
-            if (DEBUG_BOT_ORDERS)
+            if constexpr (DEBUG_BOT_ACTIONS)
                 handler->PSendSysMessage("Order failed: %s: pull %s", bot->GetName(), target ? target->GetName().c_str() : "unknown");
         }
 
@@ -2269,7 +2273,7 @@ public:
             }
 
             std::erase_if(cBots, [=](Creature const* tbot) {
-                if (tbot->GetBotAI()->GetOrdersCount() >= MAX_BOT_ORDERS_QUEUE_SIZE)
+                if (tbot->GetBotAI()->GetActionsQueueSize() >= MAX_BOT_ORDERS_QUEUE_SIZE)
                     return true;
                 return !canBotUseSpell(tbot, base_spell);
             });
@@ -2364,19 +2368,19 @@ public:
             return true;
         }
 
-        bot_ai::BotOrder order(BOT_ORDER_SPELLCAST);
-        order.params.spellCastParams.baseSpell = base_spell;
-        order.params.spellCastParams.targetGuid = target_guid;
+        bot_ai::BotAction order(BotActionTypes::BOT_ACTION_SPELLCAST);
+        order.params.spell_cast_params.base_spell = base_spell;
+        order.params.spell_cast_params.target_guid = target_guid;
 
-        if (bot->GetBotAI()->AddOrder(std::move(order)))
+        if (bot->GetBotAI()->EnqueueAction(std::move(order), true))
         {
-            if (DEBUG_BOT_ORDERS)
+            if constexpr (DEBUG_BOT_ACTIONS)
                 handler->PSendSysMessage("Order given: %s: %s on %s", bot->GetName(),
                     sSpellMgr->GetSpellInfo(base_spell)->SpellName[handler->GetSessionDbcLocale()], target ? target->GetName().c_str() : "unknown");
         }
         else
         {
-            if (DEBUG_BOT_ORDERS)
+            if constexpr (DEBUG_BOT_ACTIONS)
                 handler->PSendSysMessage("Order failed: %s: %s on %s", bot->GetName(),
                     sSpellMgr->GetSpellInfo(base_spell)->SpellName[handler->GetSessionDbcLocale()], target ? target->GetName().c_str() : "unknown");
         }
@@ -3126,7 +3130,7 @@ public:
         }
 
         Creature* bot = ubot->ToCreature();
-        if (!bot || !bot->IsNPCBot() || bot->GetBotAI()->IsWanderer())
+        if (!bot || !bot->IsNPCBot() || bot->GetBotAI()->IsWanderer() || bot->IsSummon())
         {
             handler->SendSysMessage("You must select a non-wandering npcbot");
             handler->SetSentErrorMessage(true);
@@ -3192,10 +3196,10 @@ public:
             return false;
         }
 
-        if (!bot_ai::IsValidSpecForClass(bot->GetBotClass(), *spec))
+        if (!BotDataMgr::IsValidSpecForClass(bot->GetBotClass(), *spec))
         {
             handler->PSendSysMessage("%s is not a valid spec for bot class %u!",
-                bot_ai::LocalizedNpcText(chr, bot_ai::TextForSpec(*spec)), uint32(bot->GetBotClass()));
+                bot_ai::LocalizedNpcText(chr, BotDataMgr::TextForSpec(*spec)), uint32(bot->GetBotClass()));
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -3378,7 +3382,7 @@ public:
         }
 
         Creature* bot = ubot->ToCreature();
-        if (!bot || !bot->IsNPCBot() || !bot->GetBotAI()->GetBotOwnerGuid() || bot->IsTempBot())
+        if (!bot || !bot->IsNPCBot() || !bot->GetBotAI()->GetBotOwnerGuid() || bot->IsTempBot() || bot->IsSummon())
         {
             handler->SendSysMessage("No owned npcbot selected");
             handler->SetSentErrorMessage(true);
@@ -3393,9 +3397,9 @@ public:
             return false;
         }
 
-        uint8 spec = bot_ai::SelectSpecForClass(bot->GetBotClass());
+        uint8 spec = BotDataMgr::SelectSpecForClass(bot->GetBotClass());
         BotDataMgr::UpdateNpcBotData(bot->GetEntry(), NPCBOT_UPDATE_SPEC, &spec);
-        uint32 roleMask = bot_ai::DefaultRolesForClass(bot->GetBotClass(), spec);
+        uint32 roleMask = BotDataMgr::DefaultRolesForClass(bot->GetBotClass(), spec);
         BotDataMgr::UpdateNpcBotData(bot->GetEntry(), NPCBOT_UPDATE_ROLES, &roleMask);
 
         if (!botowner)
@@ -3439,6 +3443,13 @@ public:
         {
             BotDataMgr::DespawnWandererBot(bot->GetEntry());
             handler->PSendSysMessage("Wandering bot %u '%s' successfully deleted", bot->GetEntry(), bot->GetName());
+            return true;
+        }
+
+        if (bot->IsSummon() && !bot->IsTempBot())
+        {
+            BotDataMgr::DespawnDungeonBot(bot->GetEntry());
+            handler->PSendSysMessage("Dungeon bot %u '%s' successfully deleted", bot->GetEntry(), bot->GetName());
             return true;
         }
 
@@ -3486,6 +3497,13 @@ public:
         {
             BotDataMgr::DespawnWandererBot(bot->GetEntry());
             handler->PSendSysMessage("Wandering bot %u '%s' successfully deleted", bot->GetEntry(), bot->GetName());
+            return true;
+        }
+
+        if (bot->IsSummon() && !bot->IsTempBot())
+        {
+            BotDataMgr::DespawnDungeonBot(bot->GetEntry());
+            handler->PSendSysMessage("Dungeon bot %u '%s' successfully deleted", bot->GetEntry(), bot->GetName());
             return true;
         }
 
@@ -3831,8 +3849,8 @@ public:
             return false;
         }
 
-        uint8 bot_spec = bot_ai::SelectSpecForClass(_botExtras->bclass);
-        BotDataMgr::AddNpcBotData(id, bot_ai::DefaultRolesForClass(_botExtras->bclass, bot_spec), bot_spec, creature->GetCreatureTemplate()->faction);
+        uint8 bot_spec = BotDataMgr::SelectSpecForClass(_botExtras->bclass);
+        BotDataMgr::AddNpcBotData(id, BotDataMgr::DefaultRolesForClass(_botExtras->bclass, bot_spec), bot_spec, creature->GetCreatureTemplate()->faction);
 
         creature->SaveToDB(map->GetId(), (uint8(1) << map->GetSpawnMode()), chr->GetPhaseMaskForSpawn());
 
@@ -4697,7 +4715,7 @@ public:
         if (!names || names->empty())
         {
             Creature const* bot = handler->getSelectedCreature();
-            if (bot && bot->IsNPCBot() && !bot->IsTempBot() && !mgr->GetBot(bot->GetGUID()) && bot->GetBotAI()->HasBotCommandState(BOT_COMMAND_UNBIND) &&
+            if (bot && bot->IsNPCBot() && !bot->IsTempBot() && !bot->IsSummon() && !mgr->GetBot(bot->GetGUID()) && bot->GetBotAI()->HasBotCommandState(BOT_COMMAND_UNBIND) &&
                 bot->GetBotAI()->HasOwner(owner->GetGUID().GetCounter()))
             {
                 if (BotAddResult res = mgr->RebindBot(const_cast<Creature*>(bot)); res != BOT_ADD_SUCCESS)
@@ -4716,7 +4734,7 @@ public:
                 bot_ids.push_back(ebot->GetEntry());
 
             Creature const* bot = BotDataMgr::FindBot(name, owner->GetSession()->GetSessionDbLocaleIndex(), &bot_ids);
-            if (bot && bot->IsNPCBot() && !bot->IsTempBot() && !mgr->GetBot(bot->GetGUID()) && bot->GetBotAI()->HasBotCommandState(BOT_COMMAND_UNBIND) &&
+            if (bot && bot->IsNPCBot() && !bot->IsTempBot() && !bot->IsSummon() && !mgr->GetBot(bot->GetGUID()) && bot->GetBotAI()->HasBotCommandState(BOT_COMMAND_UNBIND) &&
                 bot->GetBotAI()->HasOwner(owner->GetGUID().GetCounter()))
             {
                 if (BotAddResult res = mgr->RebindBot(const_cast<Creature*>(bot)); res != BOT_ADD_SUCCESS)
@@ -4904,7 +4922,7 @@ public:
         }
 
         Creature* bot = cre->ToCreature();
-        if (!bot || !bot->IsNPCBot() || bot->GetBotAI()->GetBotOwnerGuid() || bot->GetBotAI()->IsWanderer())
+        if (!bot || !bot->IsNPCBot() || bot->GetBotAI()->GetBotOwnerGuid() || bot->GetBotAI()->IsWanderer() || bot->IsSummon())
         {
             handler->SendSysMessage("You must select uncontrolled non-wandering npcbot");
             handler->SetSentErrorMessage(true);

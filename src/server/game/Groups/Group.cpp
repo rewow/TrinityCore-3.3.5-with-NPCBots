@@ -507,7 +507,7 @@ bool Group::AddMember(Creature* creature)
     }
 
     // insert into the table if we're not a battleground group
-    if (!isBGGroup() && !isBFGroup())
+    if (!isBGGroup() && !isBFGroup() && !creature->IsSummon())
     {
         //INSERT INTO characters_npcbot_group_member (guid, entry, memberFlags, subgroup, roles) VALUES(?, ?, ?, ?, ?), CONNECTION_ASYNC
         CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_NPCBOT_GROUP_MEMBER);
@@ -690,7 +690,7 @@ bool Group::RemoveMember(ObjectGuid guid, RemoveMethod const& method /*= GROUP_R
         if (isLFGGroup() && method == GROUP_REMOVEMETHOD_KICK)
             return !m_memberSlots.empty();
 
-        if (GetMembersCount() > ((isBGGroup() || isLFGGroup() || isBFGroup()) ? 1u : 2u))
+        if (GetMembersCount() > ((isBGGroup() || isBFGroup()) ? 1u : 2u))
         {
             if (Creature const* cbot = BotDataMgr::FindBot(guid.GetEntry()))
             {
@@ -1935,7 +1935,7 @@ void Group::SetTargetIcon(uint8 id, ObjectGuid whoGuid, ObjectGuid targetGuid)
     if (need_cache_name && setter)
     {
         Unit const* newtarget = !targetGuid.IsEmpty() ? ObjectAccessor::GetUnit(*setter, targetGuid) : nullptr;
-        std::string_view newname = newtarget ? newtarget->GetName() : "";
+        std::string_view newname = newtarget ? std::string_view{ newtarget->GetName() } : std::string_view{ "" };
         for (GroupReference const* itr = GetFirstMember(); itr != nullptr; itr = itr->next())
         {
             Player const* member = itr->GetSource();
