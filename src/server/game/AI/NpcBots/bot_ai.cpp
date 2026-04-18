@@ -492,7 +492,7 @@ void bot_ai::ResetBotAI(uint8 resetType)
     if (spawned)
         ReturnHome();
 
-    if (!me->IsInWorld() || resetType == BOTAI_RESET_FORCERECALL)
+    if ((!me->IsInWorld() || resetType == BOTAI_RESET_FORCERECALL) && !me->IsSummon())
     {
         TeleportHomeStart(resetType != BOTAI_RESET_UNBIND);
     }
@@ -1504,7 +1504,7 @@ void bot_ai::ResurrectGroup(uint32 spell_id)
         Player* player = master;
         if (!player->IsAlive() && !player->IsResurrectRequested() && !player->GetUInt32Value(PLAYER_SELF_RES_SPELL))
         {
-            Unit* target = player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) ? player->ToUnit() : (Unit*)player->GetCorpse();
+            Unit* target = !player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) ? player->ToUnit() : (Unit*)player->GetCorpse();
             if (target && target->IsInWorld() && me->GetMap() == target->FindMap() &&
                 !player->GetBotMgr()->IsBeingResurrected(target))
             {
@@ -1545,7 +1545,7 @@ void bot_ai::ResurrectGroup(uint32 spell_id)
                 Bots = true;
             if (player->IsAlive() || player->IsResurrectRequested() || player->GetUInt32Value(PLAYER_SELF_RES_SPELL)) continue;
 
-            Unit* target = player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) ? player->ToUnit() : (Unit*)player->GetCorpse();
+            Unit* target = !player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST) ? player->ToUnit() : (Unit*)player->GetCorpse();
 
             if (!target || !target->IsInWorld()) continue;
             if (target->GetTypeId() != player->GetTypeId() && me->GetMap() != target->FindMap()) continue;
@@ -9163,6 +9163,7 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                             if (BotCfg::SendEquipListItems())
                                 BotWhisper(name.view(), player);
                             AddGossipItemFor(player, GOSSIP_ICON_CHAT, name.str(), GOSSIP_SENDER_EQUIP + slot, GOSSIP_ACTION_INFO_DEF + pItem->GetGUID().GetCounter());
+                            name.str("");
                             ++counter;
                             return true;
                         }
@@ -9391,6 +9392,7 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                                 if (BotCfg::SendEquipListItems())
                                     BotWhisper(name.view(), player);
                                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, name.str(), GOSSIP_SENDER_EQUIP_AUTOEQUIP_EQUIP + slot, GOSSIP_ACTION_INFO_DEF + guidlow);
+                                name.str("");
                                 ++counter;
                                 return true;
                             }
@@ -12925,12 +12927,12 @@ bool bot_ai::_isItemFitForWanderingBot(uint8 slot, ItemTemplate const* proto) co
                     if (me->GetLevel() < 70)
                         break;
                     return !item_has_stat(proto, ITEM_MOD_INTELLECT);
-                case BOT_SLOT_OFFHAND:
-                    if (!(proto->InventoryType == INVTYPE_SHIELD))
-                        return false;
-                    if (me->GetLevel() < 70)
-                        break;
-                    return !item_has_stat(proto, ITEM_MOD_INTELLECT);
+                //case BOT_SLOT_OFFHAND:
+                //    if (!(proto->InventoryType == INVTYPE_SHIELD))
+                //        return false;
+                //    if (me->GetLevel() < 70)
+                //        break;
+                //    return !item_has_stat(proto, ITEM_MOD_INTELLECT);
                 default:
                     break;
             }
@@ -13052,10 +13054,15 @@ bool bot_ai::_isItemFitForWanderingBot(uint8 slot, ItemTemplate const* proto) co
             }
             break;
         case BOT_SPEC_DRUID_BALANCE:
+        case BOT_SPEC_DRUID_RESTORATION:
             switch (slot)
             {
                 case BOT_SLOT_TRINKET1: case BOT_SLOT_TRINKET2:
                     break;
+                case BOT_SLOT_MAINHAND:
+                    if (me->GetLevel() < 70)
+                        break;
+                    return proto->InventoryType == INVTYPE_2HWEAPON && item_has_stat(proto, ITEM_MOD_INTELLECT);
                 default:
                     if (me->GetLevel() < 70)
                         break;
@@ -15044,7 +15051,7 @@ void bot_ai::InitRoles()
 void bot_ai::InitSpec()
 {
     uint8 spec;
-    if (IAmFree())
+    if (IAmFree() && !me->IsSummon())
         spec = BotDataMgr::SelectSpecForClass(_botclass);
     else
         spec = _botData->spec;
@@ -15053,9 +15060,7 @@ void bot_ai::InitSpec()
 
     if (spec < BOT_SPEC_BEGIN || spec > BOT_SPEC_END)
     {
-        BOT_LOG_ERROR("entities.unit", "bot_ai::InitSpec(): spec ({}) is out of range for bot {}! Falling to default (1)...",
-            uint32(spec), me->GetEntry());
-
+        BOT_LOG_ERROR("entities.unit", "bot_ai::InitSpec(): spec ({}) is out of range for bot {} ({})! Falling to default ({})...", uint32(spec), me->GetName(), me->GetEntry(), BOT_SPEC_DEFAULT);
         spec = BOT_SPEC_DEFAULT;
     }
 
@@ -15103,6 +15108,8 @@ void bot_ai::InitEquips()
 
     if (IsWanderer() || me->IsSummon())
     {
+        BOT_LOG_TRACE("npcbots", "Bot {} id {} class {} spec {} level {} generates gear...", me->GetName(), me->GetEntry(), uint32(_botclass), uint32(GetSpec()), uint32(me->GetLevel()));
+
         auto fit_check = [this](uint8 slot, ItemTemplate const* proto) { return _isItemFitForWanderingBot(slot, proto); };
 
         GenerateRand();
@@ -20029,11 +20036,11 @@ WanderNode const* bot_ai::GetNextBGTravelNode() const
                 if (myTeamId != teamId)
                     continue;
 
-                uint8 unowned_points_mask = 0;
+                uint32 unowned_points_mask = 0;
                 for (uint8 index : NPCBots::index_array<uint8, EY_POINTS_MAX>)
                     if (ey->GetPointOwner(index) != myTeamId)
-                        unowned_points_mask |= static_cast<uint8>(1u << index);
-                if (unowned_points_mask)
+                        unowned_points_mask |= 1u << index;
+                if (!unowned_points_mask)
                 {
                     WanderNode const* lockWP = WanderNode::FindInMapWPs(me->GetMapId(), [=](WanderNode const* mwp) {
                         return mwp->HasAllFlags(myTeamId == TEAM_ALLIANCE ? BotWPFlags::BOTWP_FLAG_SPAWN_INTERCEPT_ALLIANCE : BotWPFlags::BOTWP_FLAG_SPAWN_INTERCEPT_HORDE);
@@ -20056,11 +20063,11 @@ WanderNode const* bot_ai::GetNextBGTravelNode() const
                     if (!((1u << index) & unowned_points_mask))
                         continue;
                     uint8 attackers_count = std::ranges::count_if(team_members, [=, this](Unit const* m) {
-                        return (m != me && (m->GetExactDist2d(BG_EY_TriggerPositions[index]) < float(BG_EY_POINT_RADIUS) * 0.5f ||
-                            (m->IsNPCBot() && m->GetExactDist2d(BG_EY_TriggerPositions[index]) < me->GetExactDist2d(BG_EY_TriggerPositions[index]))));
+                        return (m != me && (m->GetExactDist2dSq(BG_EY_TriggerPositions[index]) < std::pow(float(BG_EY_POINT_RADIUS) * 0.5f, 2.f) ||
+                            (m->IsNPCBot() && m->GetExactDist2dSq(BG_EY_TriggerPositions[index]) < me->GetExactDist2dSq(BG_EY_TriggerPositions[index]))));
                     });
-                    if (attackers_count < uint8(team_members.size() / 5u + 1u))
-                        attackable_points_mask |= static_cast<uint8>(1u << index);
+                    if (attackers_count < team_members.size() / 5u + 1u)
+                        attackable_points_mask |= 1u << index;
                 }
                 NodeList attackableWPs;
                 WanderNode::DoForAllMapWPs(bg->GetMapId(), [&attackableWPs](WanderNode const* dwp) {

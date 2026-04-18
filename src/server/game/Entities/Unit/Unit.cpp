@@ -47,7 +47,7 @@
 #include "LootMgr.h"
 #include "MotionMaster.h"
 #include "MovementGenerator.h"
-#include "MovementPacketBuilder.h"
+#include "MovementPackets.h"
 #include "MoveSpline.h"
 #include "MoveSplineInit.h"
 #include "ObjectAccessor.h"
@@ -582,10 +582,10 @@ void Unit::SendFlightSplineSyncUpdate()
     if (!movespline->isCyclic() || movespline->Finalized())
         return;
 
-    WorldPacket data(SMSG_FLIGHT_SPLINE_SYNC, 4 + GetPackGUID().size());
-    Movement::PacketBuilder::WriteSplineSync(*movespline, data);
-    data << GetPackGUID();
-    SendMessageToSet(&data, true);
+    WorldPackets::Movement::FlightSplineSync flightSplineSync;
+    flightSplineSync.Guid = GetGUID();
+    flightSplineSync.SplineDist = float(movespline->timePassed()) / movespline->Duration();
+    SendMessageToSet(flightSplineSync.Write(), true);
 }
 
 void Unit::InterruptMovementBasedAuras()
@@ -8928,7 +8928,7 @@ bool Unit::IsAlwaysVisibleFor(WorldObject const* seer) const
                     return true;
 
     //npcbot - bots are always visible for owner
-    if (GetCreator() && (seer->GetGUID() == GetCreator()->GetGUID() || (seer->IsCreature() && seer->ToCreature()->GetCreator() == GetCreator())))
+    if (GetCreator() && (seer->ToUnit() == GetCreator() || (seer->IsCreature() && seer->ToCreature()->GetCreator() == GetCreator())))
         return true;
     //end npcbot
 
@@ -10264,6 +10264,14 @@ void Unit::CleanupBeforeRemoveFromMap(bool finalCleanup)
 
 void Unit::CleanupsBeforeDelete(bool finalCleanup)
 {
+    //npcbot
+    if (IsNPCBot() && IsSummon() && !ToCreature()->IsTempBot())
+        if (Unit const* creator = GetCreator())
+            if (Player const* owner = creator->ToPlayer())
+                if (owner->GetBotMgr()->GetBot(GetGUID()))
+                    owner->GetBotMgr()->RemoveBot(GetGUID(), BOT_REMOVE_UNSUMMON);
+    //end npcbot
+
     CleanupBeforeRemoveFromMap(finalCleanup);
 
     WorldObject::CleanupsBeforeDelete(finalCleanup);
@@ -12275,6 +12283,7 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
 
     // Set charmed
     charmer->SetCharm(this, true);
+    m_combatManager.RevalidateCombat();
 
     if (Player* player = ToPlayer())
     {
