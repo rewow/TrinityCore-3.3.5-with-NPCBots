@@ -6239,9 +6239,9 @@ bool bot_ai::IsUsableItem(Item const* item)
 {
     if (ItemTemplate const* proto = item->GetTemplate())
     {
-        for (auto const& itemSpell : proto->Spells)
+        for (auto const& itemSpell : proto->Effects)
         {
-            if (itemSpell.SpellId != 0 && itemSpell.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+            if (itemSpell.SpellID != 0 && itemSpell.TriggerType == ITEM_SPELLTRIGGER_ON_USE)
                 return true;
         }
     }
@@ -6255,10 +6255,10 @@ uint32 bot_ai::GetItemSpellCooldown(uint32 spellId) const
         if (item && IsUsableItem(item))
         {
             ItemTemplate const* proto = item->GetTemplate();
-            for (auto const& itemSpell : proto->Spells)
+            for (auto const& itemSpell : proto->Effects)
             {
-                if (itemSpell.SpellId == decltype(itemSpell.SpellId)(spellId))
-                    return itemSpell.SpellCooldown;
+                if (itemSpell.SpellID == decltype(itemSpell.SpellID)(spellId))
+                    return itemSpell.CoolDownMSec;
             }
         }
     }
@@ -6280,14 +6280,14 @@ void bot_ai::CheckUsableItems(uint32 diff)
             {
                 bool is_spell_ready = false;
                 uint32 firstItemSpellId = 0;
-                for (auto const& itemSpell : item->GetTemplate()->Spells)
+                for (auto const& itemSpell : item->GetTemplate()->Effects)
                 {
-                    if (itemSpell.SpellId > 0 && itemSpell.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+                    if (itemSpell.SpellID > 0 && itemSpell.TriggerType == ITEM_SPELLTRIGGER_ON_USE)
                     {
                         if (firstItemSpellId == 0)
-                            firstItemSpellId = itemSpell.SpellId;
+                            firstItemSpellId = itemSpell.SpellID;
 
-                        if (IsSpellReady(itemSpell.SpellId, diff, false))
+                        if (IsSpellReady(itemSpell.SpellID, diff, false))
                             is_spell_ready = true;
                         else
                         {
@@ -10288,7 +10288,7 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                 {
                     ItemTemplate const* proto = item->GetTemplate();
                     // Learning (483 / 55884)
-                    if (proto->Spells[0].SpellId == 483 || proto->Spells[0].SpellId == 55884)
+                    if (proto->Effects[0].SpellID == 483 || proto->Effects[0].SpellID == 55884)
                         break;
 
                     // cast item spell
@@ -10317,11 +10317,11 @@ bool bot_ai::OnGossipSelect(Player* player, Creature* creature/* == me*/, uint32
                         proto->RequiredSkill == 0 && proto->RequiredSpell == 0 && bot->GetLevel() >= proto->RequiredLevel))
                         return false;
                     bool has_spell = false;
-                    for (auto const& ispell: proto->Spells)
+                    for (auto const& ispell: proto->Effects)
                     {
-                        if (ispell.SpellId != 0)
+                        if (ispell.SpellID != 0)
                         {
-                            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(ispell.SpellId))
+                            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(ispell.SpellID))
                             {
                                 if (spellInfo->IsPassive())
                                     continue;
@@ -13755,17 +13755,17 @@ void bot_ai::ApplyItemEquipSpells(Item* item, bool apply)
 
     for (auto i : NPCBots::index_array<uint8, MAX_ITEM_PROTO_SPELLS>)
     {
-        _Spell const& spellData = proto->Spells[i];
+        auto const& spellData = proto->Effects[i];
 
-        if (!spellData.SpellId)
+        if (!spellData.SpellID)
             continue;
 
         // wrong triggering type
-        if (apply && spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_EQUIP)
+        if (apply && spellData.TriggerType != ITEM_SPELLTRIGGER_ON_EQUIP)
             continue;
 
         // check if it is valid spell
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellID);
         if (!spellInfo)
             continue;
 
@@ -14593,11 +14593,11 @@ void bot_ai::_castBotItemUseSpell(Item const* item, SpellCastTargets const& targ
     SpellInfo const* spellInfo;
     for (auto i : NPCBots::index_array<uint8, MAX_ITEM_PROTO_SPELLS>)
     {
-        _Spell const& spellData = proto->Spells[i];
-        if (!spellData.SpellId || spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
+        auto const& spellData = proto->Effects[i];
+        if (!spellData.SpellID || spellData.TriggerType != ITEM_SPELLTRIGGER_ON_USE)
             continue;
 
-        spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellId);
+        spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellID);
         if (!spellInfo)
             continue;
 
@@ -16272,17 +16272,17 @@ void bot_ai::CastBotItemCombatSpell(DamageInfo const& damageInfo, Item* item, It
     {
         for (auto i : NPCBots::index_array<uint8, MAX_ITEM_PROTO_SPELLS>)
         {
-            _Spell const& spellData = proto->Spells[i];
+            auto const& spellData = proto->Effects[i];
 
             // no spell
-            if (!spellData.SpellId)
+            if (!spellData.SpellID)
                 continue;
 
             // wrong triggering type
-            if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_CHANCE_ON_HIT)
+            if (spellData.TriggerType != ITEM_SPELLTRIGGER_CHANCE_ON_HIT)
                 continue;
 
-            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellId);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellData.SpellID);
             if (!spellInfo)
             {
                 //BOT_LOG_ERROR("entities.player.items", "WORLD: unknown Item spellid {}", spellData.SpellId);
@@ -16526,7 +16526,7 @@ void bot_ai::_processQueuedActions()
 
     BotAction const& action = GetFirstActionInQueue();
 
-    if (action._exec_point <= now)
+    if (action._exec_point > now)
         return;
 
     Unit* target = nullptr;
@@ -16567,7 +16567,7 @@ void bot_ai::_processQueuedActions()
                 return;
             }
 
-            const bool is_casting = IsCasting(target);
+            const bool is_casting = IsCasting();
             const bool is_target_casting = IsCasting(target);
             const uint32 spell_id = _spells.at(action.params.spell_cast_params.base_spell).spellId;
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell_id);

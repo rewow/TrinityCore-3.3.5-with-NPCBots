@@ -2166,7 +2166,7 @@ public:
             return true;
         }
 
-        bot_ai::BotAction order(BotActionTypes::BOT_ACTION_PULL);
+        bot_ai::BotAction order(BotActionTypes::BOT_ACTION_PULL, 0s, 5s);
         order.params.pull_params.target_guid = target_guid;
 
         if (bot->GetBotAI()->EnqueueAction(std::move(order), true))
@@ -4289,11 +4289,11 @@ public:
         // find usable spell
         ItemTemplate const* itemtemplate = item->GetTemplate();
         uint32 spellId = 0;
-        for (auto const& itemspell : itemtemplate->Spells)
+        for (auto const& itemspell : itemtemplate->Effects)
         {
-            if (itemspell.SpellId > 0 && itemspell.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+            if (itemspell.SpellID > 0 && itemspell.TriggerType == ITEM_SPELLTRIGGER_ON_USE)
             {
-                spellId = itemspell.SpellId;
+                spellId = itemspell.SpellID;
                 break;
             }
         }
