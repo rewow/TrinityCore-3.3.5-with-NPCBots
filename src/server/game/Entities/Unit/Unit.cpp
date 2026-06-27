@@ -5478,12 +5478,7 @@ void Unit::SendSpellNonMeleeDamageLog(SpellNonMeleeDamage const* log)
 {
     WorldPackets::CombatLog::SpellNonMeleeDamageLog packet;
     packet.Me = log->target->GetGUID();
-    //npcbot: attacker may be nullptr
-    if (!log->attacker)
-        packet.CasterGUID = ObjectGuid::Empty;
-    else
-    //end npcbot
-    packet.CasterGUID = log->attacker->GetGUID();
+    packet.CasterGUID = Object::GetGUID(log->attacker);
     packet.SpellID = log->SpellID;
     packet.Damage = log->damage;
     if (log->damage > log->target->GetHealth())
