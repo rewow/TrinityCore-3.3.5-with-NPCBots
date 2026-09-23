@@ -3486,7 +3486,16 @@ void Unit::ProcessTerrainStatusUpdate(ZLiquidStatus /*oldLiquidStatus*/, Optiona
 
 void Unit::DeMorph()
 {
+#ifdef USE_CUSTOM_CHANGES
+    // demorph
     SetDisplayId(GetNativeDisplayId());
+    //SetNativeDisplayId(GetNativeDisplayId());
+
+    //SetDisplayId(demorphId);
+    //SetNativeDisplayId(demorphId);
+#else
+    SetDisplayId(GetNativeDisplayId());
+#endif
 }
 
 Aura* Unit::_TryStackingOrRefreshingExistingAura(AuraCreateInfo& createInfo)

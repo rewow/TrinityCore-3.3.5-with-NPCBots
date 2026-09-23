@@ -21515,13 +21515,34 @@ void Player::InitDisplayIds()
         case GENDER_FEMALE:
             SetDisplayId(info->displayId_f);
             SetNativeDisplayId(info->displayId_f);
+#ifdef USE_CUSTOM_CHANGES
+            // Save real native displayid and log it
+            //demorphId = info->displayId_f;
+            TC_LOG_INFO("server.loading", "DisplayID: {}", std::to_string(info->displayId_f));
+#endif
             break;
         case GENDER_MALE:
             SetDisplayId(info->displayId_m);
             SetNativeDisplayId(info->displayId_m);
+#ifdef USE_CUSTOM_CHANGES
+            // If draenei, change to undead male display
+            //if (info->displayId_m == 16125)
+            //{
+            //    SetDisplayId(57);
+            //    SetNativeDisplayId(57);
+            //}
+            // Save real native displayid and log it
+            //demorphId = info->displayId_m;
+            TC_LOG_INFO("server.loading", "DisplayID: {}", std::to_string(info->displayId_m));
+#endif
             break;
         default:
             TC_LOG_ERROR("entities.player", "Player::InitDisplayIds: Player '{}' ({}) has invalid gender {}", GetName(), GetGUID().ToString(), gender);
+#ifdef USE_CUSTOM_CHANGES
+            // always skeleton
+            //SetDisplayId(7550);
+            //SetNativeDisplayId(7550);
+#endif
     }
 }
 

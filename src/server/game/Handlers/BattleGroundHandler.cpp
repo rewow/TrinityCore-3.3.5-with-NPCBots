@@ -88,6 +88,11 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPackets::Battleground::Batt
     // ignore if player is already in BG
     if (_player->InBattleground())
         return;
+#ifdef USE_CUSTOM_CHANGES
+
+    // not an arena queue - keep m_arenaType in sync, the bot queue checks rely on it
+    _player->m_arenaType = 0;
+#endif
 
     // get bg instance or bg template if instance not found
     Battleground* bg = nullptr;

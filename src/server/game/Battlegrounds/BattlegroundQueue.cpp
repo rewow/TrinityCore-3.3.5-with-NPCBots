@@ -248,8 +248,10 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group const* group, 
     //npcbot: try to queue wandering bots
 #ifdef USE_CUSTOM_CHANGES
     //if (!isRated && !ArenaType && !arenateamid && !sBattlegroundMgr->isTesting() && !leader->GetGroup()) // Don't allow group queue
-#endif
+    if (!isRated && !isPremade && !leader->m_arenaType && !arenateamid && !sBattlegroundMgr->isTesting())
+#else
     if (!isRated && !isPremade && !arenateamid && !sBattlegroundMgr->isTesting())
+#endif
     {
         if (!BotDataMgr::GenerateBattlegroundBots(leader, group, this, bracketEntry, ginfo))
         {
@@ -260,7 +262,7 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group const* group, 
 #ifdef USE_CUSTOM_CHANGES
     // Arena:
     //else if (!isRated && ArenaType && !sBattlegroundMgr->isTesting())
-    else if (!isRated && arenateamid && !sBattlegroundMgr->isTesting() && !leader->GetGroup()) // Don't allow group queue
+    else if (!isRated && leader->m_arenaType && !sBattlegroundMgr->isTesting() && !leader->GetGroup()) // Don't allow group queue
     {
         //TC_LOG_INFO("server.loading", "Queueing wandering bots for arena! BgTypeId: {}", BgTypeId);
         if (!BotDataMgr::GenerateBattlegroundBots(leader, group, this, bracketEntry, ginfo))

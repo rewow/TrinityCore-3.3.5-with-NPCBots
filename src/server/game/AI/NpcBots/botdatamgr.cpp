@@ -222,6 +222,10 @@ static void SpawnWandererBot(uint32 bot_id, WanderNode const* spawnLoc, NpcBotRe
         BOT_LOG_INFO("npcbots", "Spawning wandering bot: {} ({}) class {} race {} fac {}, location: mapId {} {} ({})",
             bot_template.Name, bot_id, uint32(bot_extras->bclass), uint32(bot_extras->race), bot_data->faction,
             spawnLoc->GetMapId(), spawnLoc->ToString(), spawnLoc->GetName());
+    else
+        BOT_LOG_DEBUG("npcbots", "Spawning wandering bot: {} ({}) class {} race {} fac {}, location: mapId {} {} ({})",
+            bot_template.Name, bot_id, uint32(bot_extras->bclass), uint32(bot_extras->race), bot_data->faction,
+            spawnLoc->GetMapId(), spawnLoc->ToString(), spawnLoc->GetName());
 
     // Write position to file. Requires:
     //#include <fstream>
@@ -442,6 +446,11 @@ private:
 
         ASSERT(!level_nodes.empty());
         WanderNode const* spawnLoc = Bcore::Containers::SelectRandomContainerElement(level_nodes);
+#ifdef USE_CUSTOM_CHANGES
+
+        // Change wander bot spawnloc
+        //WanderNode const* spawnLoc = level_nodes.at(0);
+#endif
 
         CreatureTemplate& bot_template = _botsExtraCreatureTemplates[next_bot_id];
         //copy all fields
@@ -2110,6 +2119,14 @@ bool BotDataMgr::GenerateBattlegroundBots(Player const* groupLeader, [[maybe_unu
     std::array<NpcBotRegistry, 2> spawned_bots;
     auto& [spawned_bots_a, spawned_bots_h] = spawned_bots;
 
+#ifdef USE_CUSTOM_CHANGES
+    // bot balance
+    //if (queued_players_a > 0)
+    //	needed_bots_count_h -= 1;
+    //else if (queued_players_h > 0)
+    //	needed_bots_count_a -= 1;
+
+#endif
     if (needed_bots_count_a)
     {
         if (!sBotGen->GenerateWanderingBotsToSpawn(needed_bots_count_a, bg_template->GetMapId(), ALLIANCE, true, bracketEntry, &spawned_bots_a, spawned_a))
@@ -2122,6 +2139,10 @@ bool BotDataMgr::GenerateBattlegroundBots(Player const* groupLeader, [[maybe_unu
                     DespawnWandererBot(bot->GetEntry());
             return false;
         }
+#ifdef USE_CUSTOM_CHANGES
+        // spawn log
+        //TC_LOG_INFO("server.loading", "Spawned {} alliance BG bots", std::to_string(needed_bots_count_a));
+#endif
     }
     if (needed_bots_count_h)
     {
@@ -2135,6 +2156,10 @@ bool BotDataMgr::GenerateBattlegroundBots(Player const* groupLeader, [[maybe_unu
                     DespawnWandererBot(bot->GetEntry());
             return false;
         }
+#ifdef USE_CUSTOM_CHANGES
+        // spawn log
+        //TC_LOG_INFO("server.loading", "Spawned {} horde BG bots", std::to_string(needed_bots_count_h));
+#endif
     }
 
 #ifdef USE_CUSTOM_CHANGES

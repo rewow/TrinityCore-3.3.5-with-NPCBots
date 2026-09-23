@@ -28,6 +28,9 @@
 
 //npcbot
 #include "Creature.h"
+#ifdef USE_CUSTOM_CHANGES
+#include "botdatamgr.h"
+#endif
 //end npcbot
 
 void ArenaScore::AppendToPacket(WorldPackets::Battleground::PVPLogData_Player& playerData)
@@ -147,9 +150,33 @@ void Arena::AddBot(Creature* bot)
 {
 #ifdef USE_CUSTOM_CHANGES
     //ASSERT(bot->IsNPCBot() && !bot->IsFreeBot());
+
+    // wandering bots are free bots, so the team cannot be taken from a bot owner
+    TeamId teamId = BotDataMgr::GetTeamIdForFaction(bot->GetFaction());
+    uint32 botteam = teamId == TEAM_HORDE ? HORDE : ALLIANCE;
+
+    bool const isInBattleground = IsPlayerInBattleground(bot->GetGUID());
+    Battleground::AddBot(bot);
+
+    if (!isInBattleground)
+        BotScores[bot->GetGUID()] = new ArenaScore(bot->GetGUID(), botteam);
+
+    if (teamId == TEAM_ALLIANCE) // gold
+    {
+        if (teamId == TEAM_HORDE)
+            bot->CastSpell(bot, SPELL_HORDE_GOLD_FLAG, true);
+        else
+            bot->CastSpell(bot, SPELL_ALLIANCE_GOLD_FLAG, true);
+    }
+    else // green
+    {
+        if (teamId == TEAM_HORDE)
+            bot->CastSpell(bot, SPELL_HORDE_GREEN_FLAG, true);
+        else
+            bot->CastSpell(bot, SPELL_ALLIANCE_GREEN_FLAG, true);
+    }
 #else
     ASSERT(bot->IsNPCBot() && !bot->IsFreeBot());
-#endif
 
     bool const isInBattleground = IsPlayerInBattleground(bot->GetGUID());
     Battleground::AddBot(bot);
@@ -160,6 +187,7 @@ void Arena::AddBot(Creature* bot)
         BotScores[bot->GetGUID()] = new ArenaScore(bot->GetGUID(), botteam);
 
     //No flags - handled by AI
+#endif
 
     UpdateArenaWorldState();
 }

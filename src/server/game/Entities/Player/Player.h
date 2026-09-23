@@ -2258,7 +2258,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         /*****************************************************************/
 
 #ifdef USE_CUSTOM_CHANGES
-        uint8 m_arenaType;
+        uint8 m_arenaType = 0;
 
 #endif
     protected:

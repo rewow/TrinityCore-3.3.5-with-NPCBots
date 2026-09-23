@@ -164,6 +164,7 @@ enum BattlegroundTimeIntervals
 enum BattlegroundStartTimeIntervals
 {
 #ifdef USE_CUSTOM_CHANGES
+    // 1m bg start time interval
     //BG_START_DELAY_2M               = 120000,               // ms (2 minutes)
     BG_START_DELAY_2M               = 60000,                // ms (1 minute)
 #else

@@ -1298,6 +1298,11 @@ class TC_GAME_API Unit : public WorldObject
         void RemoveCharmedBy(Unit* charmer);
         void RestoreFaction();
 
+#ifdef USE_CUSTOM_CHANGES
+        // demorphid
+        uint32 demorphId = 0;
+
+#endif
         ControlList m_Controlled;
         Unit* GetFirstControlled() const;
         void RemoveAllControlled();

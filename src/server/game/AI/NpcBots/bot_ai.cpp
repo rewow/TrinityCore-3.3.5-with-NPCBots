@@ -457,7 +457,7 @@ void bot_ai::ResetBotAI(uint8 resetType)
     _reviveTimer = 0;
 #ifdef USE_CUSTOM_CHANGES
     // stuckTimer
-    _stuckTimer = urand(3600000, 3800000); // Reset to ~1 Hour
+    _stuckTimer = urand(3600000, 3700000); // Reset to ~1 Hour
     stuckWpId = 0;
 #endif
 
@@ -2178,6 +2178,11 @@ void bot_ai::SetStats(bool force)
             mapmaxlevel += BotDataMgr::GetLevelBonusForBotRank(me->GetCreatureTemplate()->rank);
             //TODO: experience system for levelups
             mylevel = std::max<uint8>(mylevel, std::min<uint8>(_baseLevel + uint8(uint32(float(_killsCount) * BotCfg::GetBotWandererXPGainMod()) / (mylevel * 20)), mapmaxlevel));
+#ifdef USE_CUSTOM_CHANGES
+            // Change wander bot level (if too low, the poor bots will spawn at high-lvl locations unless changed in botdatamgr)
+            //if (urand(1, 100) <= 40)
+            //    mylevel = 80;
+#endif
         }
     }
     else
@@ -2196,6 +2201,28 @@ void bot_ai::SetStats(bool force)
 
         me->SetLevel(mylevel);
         force = true; //reinit spells/passives/other
+#ifdef USE_CUSTOM_CHANGES
+        // don't level up, but log the "Dings"
+        if (_killsCount > 0)
+        {
+            TC_LOG_INFO("server.loading", "BOT DING!!! Bot: {}, prevlevel: {}, mylevel: {}, _killsCount: {}", me->GetEntry(), me->GetLevel(), mylevel, _killsCount);
+            // Don't level up if above level 59
+            //if (mylevel >= 60)
+            //{
+            //    //TC_LOG_INFO("server.loading", "mylevel >= 60, reverting to prevlevel");
+            //    //mylevel = prevlevel;
+            //    mylevel = me->GetLevel();
+            //    // Reset _killsCount
+            //    _killsCount = 0;
+            //}
+        }
+
+        if (me->GetLevel() != mylevel)
+        {
+            me->SetLevel(mylevel);
+            force = true; //reinit spells/passives/other
+        }
+#endif
     }
     if (force)
     {
@@ -5831,7 +5858,13 @@ uint32 bot_ai::_selectMountSpell() const
     {
         using MountArray = std::array<uint32, NUM_MOUNTS_PER_SPEED>;
 
+#ifdef USE_CUSTOM_CHANGES
+        // wanderer's cant fly
+        //bool can_fly = !IAmFree() && master_can_fly; //(!instt && me->GetMap()->GetEntry()->ExpansionID > 0);
+        bool can_fly = !IAmFree() ? master_can_fly : false; //(!instt && me->GetMap()->GetEntry()->ExpansionID > 0);
+#else
         bool can_fly = !IAmFree() && master_can_fly; //(!instt && me->GetMap()->GetEntry()->ExpansionID > 0);
+#endif
         bool useSlowMount = can_fly ? (me->GetLevel() < 70 || maxMountSpeed < 220) : (me->GetLevel() < minLevel100 || maxMountSpeed < 80);
 
         if (!can_fly)
@@ -18570,7 +18603,7 @@ void bot_ai::CommonTimers(uint32 diff)
                     me->CastSpell(me, WANDERER_HEARTHSTONE);
                 }
             }
-            _stuckTimer = urand(7200000, 7400000); // Reset to ~2 hours
+            _stuckTimer = urand(7200000, 7300000); // Reset to ~2 hours
         }
     }
 
@@ -18722,15 +18755,15 @@ void bot_ai::Evade()
 #ifdef USE_CUSTOM_CHANGES
             if ((curr_zone == 3522 && me->GetPositionZ() > 290))
             {
-                BOT_LOG_ERROR("npcbots", "Bot has invalid height in Blade's Edge! Bot {} id {} class {} level {} map {} TELEPORTING to node {} ('{}') map {}, {}, dist {} yd!",
-                //BOT_LOG_ERROR("npcbots", "Bot has invalid height in Blade's Edge! Bot {} id {} class {} level {} map {} TELEPORTING to node {} ('{}') map {}, {}, dist {} yd!",
+                BOT_LOG_ERROR("server.loading", "Bot has invalid height in Blade's Edge! Bot {} id {} class {} level {} map {} TELEPORTING to node {} ('{}') map {}, {}, dist {} yd!",
                     me->GetName().c_str(), me->GetEntry(), uint32(_botclass), uint32(me->GetLevel()), me->GetMapId(), _travel_node_cur->GetWPId(),
                     _travel_node_cur->GetName().c_str(), uint32(mapid), pos.ToString().c_str(), me->GetExactDist(pos));
-                BOT_LOG_INFO("npcbots", "BOT POS: {} {} {}", me->GetPositionX(), me->GetPositionY(), me->GetPositionZ());
+                BOT_LOG_ERROR("server.loading", "Bot Pos: {} {} {}", me->GetPositionX(), me->GetPositionY(), me->GetPositionZ());
             }
             else
             {
-                BOT_LOG_DEBUG("npcbots", "Bot {} id {} class {} level {} map {} TELEPORTING to node {} ('{}') map {}, {}, dist {} yd!",
+                //BOT_LOG_DEBUG("npcbots", "Bot {} id {} class {} level {} map {} TELEPORTING to node {} ('{}') map {}, {}, dist {} yd!",
+                BOT_LOG_INFO("npcbots", "Bot {} id {} class {} level {} map {} TELEPORTING to node {} ('{}') map {}, {}, dist {} yd!",
                     me->GetName(), me->GetEntry(), uint32(_botclass), uint32(me->GetLevel()), me->GetMapId(), _travel_node_cur->GetWPId(),
                     _travel_node_cur->GetName(), uint32(mapid), pos.ToString(), me->GetExactDist(pos));
             }
