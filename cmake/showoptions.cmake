@@ -86,6 +86,15 @@ else()
   message("* Use coreside debug     : No  (default)")
 endif()
 
+if(USE_CUSTOM_CHANGES)
+  message("* Use custom changes     : Yes (default)")
+  target_compile_definitions(trinity-compile-option-interface
+    INTERFACE
+      USE_CUSTOM_CHANGES)
+else()
+  message("* Use custom changes     : No")
+endif()
+
 if(NOT WITH_SOURCE_TREE STREQUAL "no")
   message("* Show source tree       : Yes (${WITH_SOURCE_TREE})")
 else()

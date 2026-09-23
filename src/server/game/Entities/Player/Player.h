@@ -2257,8 +2257,10 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         /***                      END NPCBOT SYSTEM                    ***/
         /*****************************************************************/
 
+#ifdef USE_CUSTOM_CHANGES
         uint8 m_arenaType;
 
+#endif
     protected:
         // Gamemaster whisper whitelist
         GuidList WhisperList;

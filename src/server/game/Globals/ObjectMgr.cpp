@@ -3128,13 +3128,21 @@ void ObjectMgr::LoadItemTemplates()
             }
             if (itemTemplate.DisplayInfoID != dbcitem->DisplayInfoID)
             {
-                // Ornfelt: Move item log
+#ifdef USE_CUSTOM_CHANGES
+                // Move item log
                 //TC_LOG_ERROR("sql.sql", "Item (Entry: {}) does not have a correct display id ({}), must be {} .", entry, itemTemplate.DisplayInfoID, dbcitem->DisplayInfoID);
+#else
+                TC_LOG_ERROR("sql.sql", "Item (Entry: {}) does not have a correct display id ({}), must be {} .", entry, itemTemplate.DisplayInfoID, dbcitem->DisplayInfoID);
+#endif
                 if (enforceDBCAttributes)
+#ifdef USE_CUSTOM_CHANGES
                 {
                     TC_LOG_ERROR("sql.sql", "Item (Entry: {}) does not have a correct display id ({}), must be {} .", entry, itemTemplate.DisplayInfoID, dbcitem->DisplayInfoID);
+#endif
                     itemTemplate.DisplayInfoID = dbcitem->DisplayInfoID;
+#ifdef USE_CUSTOM_CHANGES
                 }
+#endif
             }
             if (itemTemplate.Sheath != dbcitem->SheatheType)
             {

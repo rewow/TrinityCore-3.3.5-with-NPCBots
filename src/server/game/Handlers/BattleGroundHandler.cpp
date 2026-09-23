@@ -608,8 +608,10 @@ void WorldSession::HandleBattlemasterJoinArena(WorldPackets::Battleground::Battl
     uint32 matchmakerRating = 0;
     uint32 previousOpponents = 0;
 
+#ifdef USE_CUSTOM_CHANGES
     _player->m_arenaType = arenatype;
 
+#endif
     //check existence
     Battleground* bg = sBattlegroundMgr->GetBattlegroundTemplate(BATTLEGROUND_AA);
     if (!bg)

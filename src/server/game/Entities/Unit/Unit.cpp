@@ -1208,7 +1208,8 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
     // Script Hook For CalculateSpellDamageTaken -- Allow scripts to change the Damage post class mitigation calculations
     sScriptMgr->ModifySpellDamageTaken(damageInfo->target, damageInfo->attacker, damage);
 
-    // Ornfelt: Buff spells
+#ifdef USE_CUSTOM_CHANGES
+    // Buff spells
     // Buff lava burst
     if (spellInfo->Id == 60043)
         damage *= 2;
@@ -1225,6 +1226,7 @@ void Unit::CalculateSpellDamageTaken(SpellNonMeleeDamage* damageInfo, int32 dama
     else if (spellInfo->Id == 44425)
         damage *= 100;
 
+#endif
     // Calculate absorb resist
     if (damage < 0)
         damage = 0;

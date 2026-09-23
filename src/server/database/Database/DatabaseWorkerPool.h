@@ -208,8 +208,8 @@ class DatabaseWorkerPool
 
         void WarnAboutSyncQueries([[maybe_unused]] bool warn)
         {
-#ifdef TRINITY_DEBUG
-            //_warnSyncQueries = warn;
+#if defined(TRINITY_DEBUG) && !defined(USE_CUSTOM_CHANGES)
+            _warnSyncQueries = warn;
 #endif
         }
 

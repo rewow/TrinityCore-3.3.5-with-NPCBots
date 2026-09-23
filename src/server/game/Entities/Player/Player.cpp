@@ -1328,11 +1328,13 @@ void Player::setDeathState(DeathState s)
     if (IsAlive() && !cur)
         //clear aura case after resurrection by another way (spells will be applied before next death)
         SetUInt32Value(PLAYER_SELF_RES_SPELL, 0);
+#ifdef USE_CUSTOM_CHANGES
 
-    // Ornfelt: check win condition (seems to be required if player gets killed by unit other than bot / player)
+    // check win condition (seems to be required if player gets killed by unit other than bot / player)
     if (InArena())
         if (Battleground* bg = GetBattleground())
             bg->CheckWinConditions();
+#endif
 }
 
 bool Player::BuildEnumData(PreparedQueryResult result, WorldPacket* data)

@@ -84,7 +84,8 @@ void Arena::AddPlayer(Player* player)
     UpdateArenaWorldState();
 }
 
-// Ornfelt: npcbot
+#ifdef USE_CUSTOM_CHANGES
+// npcbot
 //void Arena::AddBot(Creature* bot)
 //{
 //    ObjectGuid guid = bot->GetGUID();
@@ -138,12 +139,17 @@ void Arena::AddPlayer(Player* player)
 //    UpdateArenaWorldState();
 //    CheckWinConditions();
 //}
-//end Ornfelt npcbot
+//end npcbot
 
+#endif
 //npcbot
 void Arena::AddBot(Creature* bot)
 {
+#ifdef USE_CUSTOM_CHANGES
     //ASSERT(bot->IsNPCBot() && !bot->IsFreeBot());
+#else
+    ASSERT(bot->IsNPCBot() && !bot->IsFreeBot());
+#endif
 
     bool const isInBattleground = IsPlayerInBattleground(bot->GetGUID());
     Battleground::AddBot(bot);
