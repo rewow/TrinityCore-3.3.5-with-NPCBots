@@ -18871,7 +18871,7 @@ void bot_ai::Evade()
                 if (me->GetMap()->GetEntry()->IsContinent())
                     //CharacterDatabase.DirectPExecute("UPDATE characters_playermap SET account={},name=\"{}\",class={},race={},level={},gender={},position_x={},position_y={},map={},zone={},extra_flags=64,online=1,taximask='',innTriggerId=1 where guid = {}",
                     //        1,me->GetName(),me->GetClass(),me->GetRace(),me->GetLevel(),me->GetGender(),me->GetPositionX(),me->GetPositionY(),me->GetMapId(),me->GetZoneId(),me->GetEntry());
-                    CharacterDatabase.DirectPExecute("UPDATE characters_playermap SET level={},gender={},position_x={},position_y={},map={},zone={} where guid = {}",
+                    CharacterDatabase.PExecute("UPDATE characters_playermap SET level={},gender={},position_x={},position_y={},map={},zone={} where guid = {}",
                             me->GetLevel(),me->GetGender(),me->GetPositionX(),me->GetPositionY(),me->GetMapId(),me->GetZoneId(),me->GetEntry());
 
 #endif
